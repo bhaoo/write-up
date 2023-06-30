@@ -1,4 +1,4 @@
 # Table of contents
 
 * [Introduction](README.md)
-* [write-up](<README (1).md>)
+* [LitCTF 2023](litctf-2023.md)
