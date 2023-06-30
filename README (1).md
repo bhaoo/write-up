@@ -1,3 +1,0 @@
-# write-up
-
-📕 WriteUp test
