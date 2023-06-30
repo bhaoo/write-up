@@ -1,4 +1,4 @@
-# Copy of Introduction
+# Introduction
 
 <figure><img src=".gitbook/assets/立绘_缪尔赛思_1.png" alt="" width="563"><figcaption></figcaption></figure>
 
