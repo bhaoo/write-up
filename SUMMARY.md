@@ -5,6 +5,7 @@
 * [蓝桥杯 2023](lan-qiao-bei-2023.md)
 * [NSSRound#13](nssround-13.md)
 * [GDOUCTF 2023](gdouctf-2023.md)
+* [MoeCTF 2022](moectf-2022.md)
 * [SWPUCTF 2022](swpuctf-2022.md)
 * [MRCTF 2020](mrctf-2020.md)
 * [GYCTF 2020](gyctf-2020.md)
