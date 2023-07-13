@@ -212,3 +212,93 @@ Referer: http://127.0.0.1/index.php
 ```
 
 就可以得到 flag `moectf{Oh_you_can_a1m_and_H4ck_Javascript}` 了！
+
+## Reverse
+
+### Reverse入门指北
+
+flag 就在指北最底下，好耶，是指北！
+
+### checkin
+
+使用 IDA 打开后就可以发现 flag 力！
+
+### Hex
+
+使用 010 Editor 打开 `Hex.exe` 后搜索 `moectf` 可以发现 flag
+
+<figure><img src=".gitbook/assets/Hex-1.png" alt=""><figcaption></figcaption></figure>
+
+### Base
+
+使用 IDA 打开后对着 `main` F5 就可以发现 base64 加密内容
+
+```
+1wX/yRrA4RfR2wj72Qv52x3L5qa=
+```
+
+并且在 `main` 中还可以发现一个符号表
+
+```
+abcdefghijklmnopqrstuvwxyz0123456789+/ABCDEFGHIJKLMNOPQRSTUVWXYZ
+```
+
+通过 CyberChef 一把梭可以得到 flag `moectf{qwqbase_qwq}`
+
+### begin
+
+使用 IDA 打开后对着 `main` F5 就可以发现
+
+```c
+for ( i = 0; i < strlen(Str); ++i )
+    Str[i] ^= 0x19u;
+if ( !strcmp(Str, Str2) )
+    puts("\nGood job!!! You know how to decode my flag by xor!");
+else
+    puts("\nQwQ. Something wrong. Please try again. >_<");
+```
+
+通过分析以上代码可以发现需要对每个字符与 `0x19` 进行异或运算，若和 `Str2` 比对完全一致则弹出正确，通过双击也可以发现 `Str2` 的内容。
+
+<figure><img src=".gitbook/assets/Base-1.png" alt=""><figcaption></figcaption></figure>
+
+整理内容可以得到一个数组
+
+```python
+arr = [0x74, 0x76, 0x7C, 0x7A, 0x6D, 0x7F, 0x62, 0x41, 0x29, 0x6B,
+       0x46, 0x28, 0x6A, 0x46, 0x6A, 0x29, 0x46, 0x70, 0x77, 0x6D,
+       0x2A, 0x6B, 0x2A, 0x6A, 0x6D, 0x70, 0x77, 0x7E, 0x38, 0x38,
+       0x38, 0x38, 0x38, 0x64]
+```
+
+编写 Python 代码对数组内容进行异或运算并且转为字符就可以得到 flag 了。
+
+```python
+arr = [0x74, 0x76, 0x7C, 0x7A, 0x6D, 0x7F, 0x62, 0x41, 0x29, 0x6B,
+       0x46, 0x28, 0x6A, 0x46, 0x6A, 0x29, 0x46, 0x70, 0x77, 0x6D,
+       0x2A, 0x6B, 0x2A, 0x6A, 0x6D, 0x70, 0x77, 0x7E, 0x38, 0x38,
+       0x38, 0x38, 0x38, 0x64]
+
+flag = ''
+for ch in arr:
+    flag += chr(ch ^ 0x19)
+print(flag)
+
+# moectf{X0r_1s_s0_int3r3sting!!!!!}
+```
+
+## Pwn
+
+### shell
+
+```bash
+$ nc node3.anna.nssctf.cn 28646
+Welcome to PWN world!
+In PWN, your goal is to get shell.
+Here I'll give you the shell as a gift for our first meeting.
+Have fun in the following trip!
+cat flag
+NSSCTF{765b5608-08aa-4876-b917-05a4129cf665}
+```
+
+##
