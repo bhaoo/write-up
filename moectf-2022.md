@@ -787,3 +787,67 @@ U2FsdGVkX1+EPlLmNvaJK4Pe06nW0eLquWsUpdyv3fjXM2PcDBDKlXeKupnnWlFHewFEGmqpGyC1VdX8
 ```
 
 解密后可以得到 flag `moectf{We1c0m3_t0_moectf_an7_3n7oy_y0urse1f}`
+
+### CCCC
+
+把文件丢到 CLion 跑一下就能得到 flag `moectf{0h_y0u_can_run_a_C_pr0gram!}` 。
+
+### Python
+
+把文件丢到 PyCharm 跑一下就能得到 flag `moectf{Python_YYDS!}` 。
+
+### run\_me
+
+用 cmd 运行就可以啦\~
+
+```
+D:\CTF>run_me.exe                                                     moectf{run_me_to_get_the_flag}   
+```
+
+### run\_me2
+
+把文件丢到 kali 在终端里输入运行即可，运行前需要注意 `右键-属性-权限-(勾选)允许此文件作为程序运行` 。
+
+```bash
+$ ./run_me2
+moectf{run_m3_t0_g3t_th3_f1ag}
+```
+
+### A\_band
+
+用 CyberChef 将二进制转十六进制，之后十六进制转字符串，发现有很多颜文字，经过百度发现是 `AAencode` 加密，解密后可以得到以下内容
+
+```
+This_is_a_small_bass_KRUGS427MJQXG427ONSWK3LTL52G6X3CMVPWI2LGMZSXEZLOORPWM4TPNVPXI2DFL5YHEZLWNFXXK427N5XGKXZXGI3EEND2GRKHQRSBMJSHI5SWIF2WM2LQMJWVCS2FMVCUIYLHOB4WOQ3YNVYE2RLDME4EMWBRNY3VIMTSKBBG2TBZOVLEE6DTJJJVOQTVGZBHEYTEKY4EQWLPIJDVQY3PGJUFKQSMKBGUKZDWPJJTSYLXK43EOWLBKA2XANDDLA3FEMSXKA4GWYY=;
+```
+
+经过 Base32 解密后得到以下内容
+
+```
+This_bass_seems_to_be_different_from_the_previous_one_726B4z4TxFAbdtvVAufipbmQKEeEDagpygCxmpMEca8FX1n7T2rPBmL9uVBxsJSWBu6BrbdV8HYoBGXco2hUBLPMEdvzS9awW6GYaP5p4cX6R2WP8kc
+```
+
+经过 Base58 解密后得到以下内容
+
+```
+The_last_step_should_be_familiar_to_you_bW9lY3Rme1doeV9zMF9tYW55XzFuc3RydW1lbnRzP30=
+```
+
+经过 Base64 解密后得到以下内容，即 flag
+
+```
+moectf{Why_s0_many_1nstruments?}
+```
+
+### bell202
+
+下载附件得到文件 `moe_modem.wav`
+
+百度找了半天 `misc 调制解调器解码` 没找到，通过题解才发现原来是 `minimodem` ，学到力！
+
+```bash
+$ minimodem -r -f moe_modem.wav 1200
+### CARRIER 1200 @ 1200.0 Hz ###
+moectf{zizi_U_he@rd_the_meanin9_beh1nd_the_s0und}
+### NOCARRIER ndata=49 confidence=4.894 ampl=1.001 bps=1200.00 (rate perfect) ###
+```
