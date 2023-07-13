@@ -741,3 +741,49 @@ print('output :' + "".join(output))
 # moectf{<CAP>l<CAP>earnee<DEL>d_a6ou7_<CAP>usb<CAP>_tr@ffic}
 # output :moectf{Learned_a6ou7_USB_tr@ffic}
 ```
+
+### Locked\_bass
+
+题目描述 `这锁虚挂着的，能踹` 提示压缩包应该是伪加密，通过 010 Editor 打开后将两个 `09 00` 修改为 `00 00` 即可修复并解压获得 `Unlocked bass.zip` 。
+
+<figure><img src=".gitbook/assets/Locked_bass-1.png" alt=""><figcaption></figcaption></figure>
+
+在 `Unlocked bass.zip` 内可以发现 `Unlocked bass.txt` ，里面包含一串 base64 编码内容。
+
+```
+bW9lY3Rme04wd190aDFzX2k0X2FfYkBzc19VX2Nhbl91M2VfdG9fcGxhOX0=
+```
+
+使用 CyberChef 一把梭就可以得到 flag `moectf{N0w_th1s_i4_a_b@ss_U_can_u3e_to_pla9}`
+
+### what\_do\_you\_recognize\_me\_by
+
+把文件拖入 010 Editor 可以明显发现这是 PNG 格式的图片，但是文件头不对，修复文件头为 `89 50 4E 47` 后就能打开图片了。
+
+<figure><img src=".gitbook/assets/what_do_you_recognize_me_by-1.png" alt=""><figcaption></figcaption></figure>
+
+给文件补上后缀名 `.png` 后打开图片是一个二维码
+
+<figure><img src=".gitbook/assets/what_do_you_recognize_me_by-2.png" alt=""><figcaption></figcaption></figure>
+
+使用软件扫码后可以得到 flag `moectf{You_r4c0gnize_%e!}`
+
+### 小纸条
+
+Hint: 全部大写，无分隔
+
+猪圈密码
+
+<figure><img src=".gitbook/assets/小纸条-1.png" alt=""><figcaption></figcaption></figure>
+
+根据上图进行解码可以得到 flag `moectf{ILOVEMYBIGBED}`
+
+### rabbit
+
+用 010 Editor 打开图片可以在末尾发现一串 Rabbit 加密数据
+
+```
+U2FsdGVkX1+EPlLmNvaJK4Pe06nW0eLquWsUpdyv3fjXM2PcDBDKlXeKupnnWlFHewFEGmqpGyC1VdX8
+```
+
+解密后可以得到 flag `moectf{We1c0m3_t0_moectf_an7_3n7oy_y0urse1f}`
