@@ -544,3 +544,200 @@ m = int(m, 2)
 print(long_to_bytes(m))
 # moectf{Co#gRa7u1at1o^s_yOu_c6n_d3c0de_1t}
 ```
+
+## Misc
+
+### Misc指北
+
+文档末尾存在摩斯电码，内容如下
+
+```
+.-- . .-.. ..--- --- -- . ..--.- ....- --- ..--.- -- .. ...-- -.-. ..--.- .---- ..- -.-. -.- -.-- -.-.--
+```
+
+用 CyberChef 一把梭可以得到 flag `moectf{WEL2OME_4O_MI3C_1UCKY!}`
+
+### nyanyanya
+
+用 StegSolve 查看图片可以发现 Red plane 3 有文字。
+
+<figure><img src=".gitbook/assets/nyanyanya-1.png" alt=""><figcaption></figcaption></figure>
+
+用 Data Extract 设置 Red plane 0、Green plane 0、Blue plane 0，可以发现 flag 就出来了
+
+<figure><img src=".gitbook/assets/nyanyanya-2.png" alt=""><figcaption></figcaption></figure>
+
+### cccrrc
+
+> crc32 爆破脚本 https://github.com/theonlypwner/crc32
+
+看标题猜测是 压缩包crc爆破（
+
+点击打开压缩包可以看到压缩后大小都是 16，满足爆破条件
+
+```bash
+$ python crc32.py reverse 0x67b2d3df
+4 bytes: {0x6d, 0x6f, 0x65, 0x63}
+verification checksum: 0x67b2d3df (OK)
+alternative: 8tLtKb (OK)
+alternative: 9USU97 (OK)
+alternative: BbaPOC (OK)
+alternative: Jhw3Ck (OK)
+alternative: K9Tc4n (OK)
+alternative: SSKsHA (OK)
+alternative: TJLMbj (OK)
+alternative: bmRitF (OK)
+alternative: e9xj3e (OK)
+alternative: lbMYHH (OK)
+alternative: txn817 (OK)
+alternative: v4WWmz (OK)
+$ python crc32.py reverse 0x628abed2
+4 bytes: {0x74, 0x66, 0x7b, 0x71}
+verification checksum: 0x628abed2 (OK)
+alternative: 1bMsCU (OK)
+alternative: 4GOS0c (OK)
+alternative: 5fPrB6 (OK)
+alternative: BbxYQQ (OK)
+alternative: Cb9hJH (OK)
+alternative: FfeXP2 (OK)
+alternative: Lmgim_ (OK)
+alternative: NQbw4B (OK)
+alternative: SSRzVS (OK)
+alternative: X4bWtc (OK)
+alternative: dhB3Zr (OK)
+alternative: fiVak7 (OK)
+alternative: hfIQW9 (OK)
+alternative: lbTPVZ (OK)
+$ python crc32.py reverse 0x6b073427
+4 bytes: {0x77, 0x71, 0x5f, 0x63}
+verification checksum: 0x6b073427 (OK)
+alternative: 1bNdgG (OK)
+alternative: 7gG7Wa (OK)
+alternative: 8tVjqb (OK)
+alternative: Ii8NS7 (OK)
+alternative: SSQmrA (OK)
+alternative: TJVSXj (OK)
+alternative: ZEIcdd (OK)
+alternative: bmHwNF (OK)
+alternative: etOIdm (OK)
+alternative: lbWGrH (OK)
+alternative: tEejco (OK)
+alternative: v4MIWz (OK)
+alternative: zJzZ_a (OK)
+$ python crc32.py reverse 0x08c8da10
+4 bytes: {0x72, 0x63, 0x21, 0x7d}
+verification checksum: 0x08c8da10 (OK)
+alternative: 4GIVjo (OK)
+alternative: IHcLDe (OK)
+alternative: K9Kopp (OK)
+alternative: KU8Bt4 (OK)
+alternative: Lmal7S (OK)
+alternative: NQdrnN (OK)
+alternative: QoQaUB (OK)
+alternative: WjX2ed (OK)
+alternative: XyIoCg (OK)
+alternative: YXVN12 (OK)
+alternative: bmMe0X (OK)
+alternative: gHOECn (OK)
+alternative: j69gPl (OK)
+alternative: k6xVKu (OK)
+alternative: vyefDl (OK)
+alternative: wXzG69 (OK)
+alternative: xvzVxb (OK)
+```
+
+将得到的 16 个字节(6d6f656374667b7177715f637263217d) 转换为字符串(moectf{qwq\_crc!}) flag 就出来咯！
+
+### zip套娃
+
+拿到压缩包后打开压缩包发现没有压缩包密码的踪迹，那就只能用 Archpr 狠狠的爆破了（悲
+
+Archpr 尝试 1 至 6 位数字爆破可以得到密码是 1235 ，解压后可以得到 `fl.zip` 和一个提示 `密码的前七位貌似是1234567 后三位被wuliao吃了` 。
+
+那就通过掩码暴力破解，设置掩码为 `1234567???` 进行爆破可以得到密码 `1234567qwq` ，解压后得到 `fla.zip` 和一个一摸一样的提示，继续使用掩码破解发现无效，用 010 Editor 查看 `fla.zip` 可以发现文件数据区的全局加密为 `00` 而文件目录区的全局方式位标记却是 `01` ，说明这个 zip 文件为伪加密文件。
+
+修复方式就是把 `01` 改成 `00` 即可。
+
+<figure><img src=".gitbook/assets/zip套娃-1.png" alt=""><figcaption></figcaption></figure>
+
+解压后就可以得到 flag `moectf{!zip_qwq_ZIP}`
+
+### usb
+
+> http://www.manongjc.com/detail/25-cxtkhbqgdxkwlwz.html
+
+将下载下来的文件丢到 kali 用 Wireshark 打开，可以看到基本都是 HID Data ，那就将 HID Data 的数据提取出来。
+
+```bash
+$ tshark -r usb.pcapng -T fields -e usbhid.data  > usbdata.txt
+```
+
+读取后通过引用中的脚本进行解码就可以得到 flag `moectf{Learned_a6ou7_USB_tr@ffic}` ，完整代码如下
+
+```python
+import re
+
+normalKeys = {"04": "a", "05": "b", "06": "c", "07": "d", "08": "e", "09": "f", "0a": "g", "0b": "h", "0c": "i",
+              "0d": "j", "0e": "k", "0f": "l", "10": "m", "11": "n", "12": "o", "13": "p", "14": "q", "15": "r",
+              "16": "s", "17": "t", "18": "u", "19": "v", "1a": "w", "1b": "x", "1c": "y", "1d": "z", "1e": "1",
+              "1f": "2", "20": "3", "21": "4", "22": "5", "23": "6", "24": "7", "25": "8", "26": "9", "27": "0",
+              "28": "<RET>", "29": "<ESC>", "2a": "<DEL>", "2b": "\t", "2c": "<SPACE>", "2d": "-", "2e": "=", "2f": "[",
+              "30": "]", "31": "\\", "32": "<NON>", "33": ";", "34": "'", "35": "<GA>", "36": ",", "37": ".", "38": "/",
+              "39": "<CAP>", "3a": "<F1>", "3b": "<F2>", "3c": "<F3>", "3d": "<F4>", "3e": "<F5>", "3f": "<F6>",
+              "40": "<F7>", "41": "<F8>", "42": "<F9>", "43": "<F10>", "44": "<F11>", "45": "<F12>"}
+shiftKeys = {"04": "A", "05": "B", "06": "C", "07": "D", "08": "E", "09": "F", "0a": "G", "0b": "H", "0c": "I",
+             "0d": "J", "0e": "K", "0f": "L", "10": "M", "11": "N", "12": "O", "13": "P", "14": "Q", "15": "R",
+             "16": "S", "17": "T", "18": "U", "19": "V", "1a": "W", "1b": "X", "1c": "Y", "1d": "Z", "1e": "!",
+             "1f": "@", "20": "#", "21": "$", "22": "%", "23": "^", "24": "&", "25": "*", "26": "(", "27": ")",
+             "28": "<RET>", "29": "<ESC>", "2a": "<DEL>", "2b": "\t", "2c": "<SPACE>", "2d": "_", "2e": "+", "2f": "{",
+             "30": "}", "31": "|", "32": "<NON>", "33": "\"", "34": ":", "35": "<GA>", "36": "<", "37": ">", "38": "?",
+             "39": "<CAP>", "3a": "<F1>", "3b": "<F2>", "3c": "<F3>", "3d": "<F4>", "3e": "<F5>", "3f": "<F6>",
+             "40": "<F7>", "41": "<F8>", "42": "<F9>", "43": "<F10>", "44": "<F11>", "45": "<F12>"}
+output = []
+
+txt = open('usbdata.txt', 'r')
+
+for line in txt:
+    line = line.strip('\n')
+    if len(line) == 16:
+        line_list = re.findall('.{2}', line)
+        line = ":".join(line_list)
+        try:
+            if line[0] != '0' or (line[1] != '0' and line[1] != '2') or line[3] != '0' or line[4] != '0' or line[
+                9] != '0' or line[10] != '0' or line[12] != '0' or line[13] != '0' or line[15] != '0' or line[
+                16] != '0' or line[18] != '0' or line[19] != '0' or line[21] != '0' or line[22] != '0' or line[
+                                                                                                          6:8] == "00":
+                continue
+            if line[6:8] in normalKeys.keys():
+                output += [[normalKeys[line[6:8]]], [shiftKeys[line[6:8]]]][line[1] == '2']
+            else:
+                output += ['[unknown]']
+        except:
+            pass
+
+txt.close()
+
+flag = 0
+print("".join(output))
+for i in range(len(output)):
+    try:
+        a = output.index('<DEL>')
+        del output[a]
+        del output[a - 1]
+    except:
+        pass
+for i in range(len(output)):
+    try:
+        if output[i] == "<CAP>":
+            flag += 1
+            output.pop(i)
+            if flag == 2:
+                flag = 0
+        if flag != 0:
+            output[i] = output[i].upper()
+    except:
+        pass
+print('output :' + "".join(output))
+# moectf{<CAP>l<CAP>earnee<DEL>d_a6ou7_<CAP>usb<CAP>_tr@ffic}
+# output :moectf{Learned_a6ou7_USB_tr@ffic}
+```
