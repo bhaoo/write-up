@@ -88,7 +88,7 @@ with open(filename, 'rb') as f:
 
 ### OSINT 探姬去哪了?\_2
 
-{% embed url="https://hn.ifeng.com/c/8PcG1DDuKYm" %}
+[https://hn.ifeng.com/c/8PcG1DDuKYm](https://hn.ifeng.com/c/8PcG1DDuKYm)
 
 结果就是 `NSSCTF{漫香音乐酒吧(农科路店)}`&#x20;
 
@@ -100,7 +100,7 @@ with open(filename, 'rb') as f:
 
 ### OSINT 这是什么地方？！
 
-{% embed url="https://m.weishi.qq.com/vise/share/index.html?id=79DecqCDn1IvxDk6v" %}
+[https://m.weishi.qq.com/vise/share/index.html?id=79DecqCDn1IvxDk6v](https://m.weishi.qq.com/vise/share/index.html?id=79DecqCDn1IvxDk6v)
 
 结果就是 `陕西有色榆林新材料集团`&#x20;
 
