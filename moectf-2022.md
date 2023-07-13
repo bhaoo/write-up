@@ -800,8 +800,9 @@ U2FsdGVkX1+EPlLmNvaJK4Pe06nW0eLquWsUpdyv3fjXM2PcDBDKlXeKupnnWlFHewFEGmqpGyC1VdX8
 
 用 cmd 运行就可以啦\~
 
-```
-D:\CTF>run_me.exe                                                     moectf{run_me_to_get_the_flag}   
+```bash
+D:\CTF>run_me.exe
+moectf{run_me_to_get_the_flag}   
 ```
 
 ### run\_me2
@@ -809,7 +810,7 @@ D:\CTF>run_me.exe                                                     moectf{run
 把文件丢到 kali 在终端里输入运行即可，运行前需要注意 `右键-属性-权限-(勾选)允许此文件作为程序运行` 。
 
 ```bash
-$ ./run_me2
+$ ./run_meB
 moectf{run_m3_t0_g3t_th3_f1ag}
 ```
 
