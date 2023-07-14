@@ -863,7 +863,7 @@ moectf{zizi_U_he@rd_the_meanin9_beh1nd_the_s0und}
 
 解压后可以得到 `qaq.py` 和 `flag.txt` ，其中 `qaq.py` 为 flag 的加密代码。
 
-```
+```python
 # this is not flag, but real flag will be encrypted in same algorithm.
 flag = 'moectf{xxxxxxxxxxxxxxxxxxxxx}'
 ​
@@ -876,7 +876,7 @@ with open('flag.txt', 'wb') as out:
 
 其中 `encrypt()` 函数会将 flag 的后一位与前一位进行异或运算并输出值，因此将这一过程逆序即可。
 
-```
+```python
 txt = open('flag.txt', 'r').read()
 ​
 ​
@@ -905,7 +905,7 @@ flag `moectf{shenzhen_longhua_qingquan}`
 
 * (15, 11) 汉明码：共 16 位，其中数据位有 11 位，奇偶校验位有 5 位。第 0 位为总的奇偶校验码，第 2^n 个为每个部分的奇偶校验码，通过两个奇偶校验码可以确认错误的在哪里并进行纠正，但当出现两次错误时，就无法纠正了，只能识别到存在错误。
 
-```
+```python
 from Crypto.Util.number import long_to_bytes  # really useful!
 from functools import reduce
 import operator as op
