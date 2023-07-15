@@ -386,3 +386,81 @@ flag 在 markdown 文件末尾 `moectf{Th1s-1s-Misc}` ！指北好耶！
 ```
 
 flag 就在上述文本当中，即 `flag{0h_U_f1nd_m3!}` 。
+
+### 诺亚的日记
+
+将下载下来的文件丢到 kali 用 Wireshark 打开，可以看到基本都是 HID Data ，那就将 HID Data 的数据提取出来。
+
+```bash
+$ tshark -r usb.pcapng -T fields -e usbhid.data  > usbdata.txt
+```
+
+读取后通过引用中的脚本进行解码就可以得到 flag `moectf{D@m3daNe_D4me_yoooooo}` ，完整代码如下
+
+```python
+import re
+
+normalKeys = {"04": "a", "05": "b", "06": "c", "07": "d", "08": "e", "09": "f", "0a": "g", "0b": "h", "0c": "i",
+              "0d": "j", "0e": "k", "0f": "l", "10": "m", "11": "n", "12": "o", "13": "p", "14": "q", "15": "r",
+              "16": "s", "17": "t", "18": "u", "19": "v", "1a": "w", "1b": "x", "1c": "y", "1d": "z", "1e": "1",
+              "1f": "2", "20": "3", "21": "4", "22": "5", "23": "6", "24": "7", "25": "8", "26": "9", "27": "0",
+              "28": "<RET>", "29": "<ESC>", "2a": "<DEL>", "2b": "\t", "2c": "<SPACE>", "2d": "-", "2e": "=", "2f": "[",
+              "30": "]", "31": "\\", "32": "<NON>", "33": ";", "34": "'", "35": "<GA>", "36": ",", "37": ".", "38": "/",
+              "39": "<CAP>", "3a": "<F1>", "3b": "<F2>", "3c": "<F3>", "3d": "<F4>", "3e": "<F5>", "3f": "<F6>",
+              "40": "<F7>", "41": "<F8>", "42": "<F9>", "43": "<F10>", "44": "<F11>", "45": "<F12>"}
+shiftKeys = {"04": "A", "05": "B", "06": "C", "07": "D", "08": "E", "09": "F", "0a": "G", "0b": "H", "0c": "I",
+             "0d": "J", "0e": "K", "0f": "L", "10": "M", "11": "N", "12": "O", "13": "P", "14": "Q", "15": "R",
+             "16": "S", "17": "T", "18": "U", "19": "V", "1a": "W", "1b": "X", "1c": "Y", "1d": "Z", "1e": "!",
+             "1f": "@", "20": "#", "21": "$", "22": "%", "23": "^", "24": "&", "25": "*", "26": "(", "27": ")",
+             "28": "<RET>", "29": "<ESC>", "2a": "<DEL>", "2b": "\t", "2c": "<SPACE>", "2d": "_", "2e": "+", "2f": "{",
+             "30": "}", "31": "|", "32": "<NON>", "33": "\"", "34": ":", "35": "<GA>", "36": "<", "37": ">", "38": "?",
+             "39": "<CAP>", "3a": "<F1>", "3b": "<F2>", "3c": "<F3>", "3d": "<F4>", "3e": "<F5>", "3f": "<F6>",
+             "40": "<F7>", "41": "<F8>", "42": "<F9>", "43": "<F10>", "44": "<F11>", "45": "<F12>"}
+output = []
+
+txt = open('usbdata.txt', 'r')
+
+for line in txt:
+    line = line.strip('\n')
+    if len(line) == 16:
+        line_list = re.findall('.{2}', line)
+        line = ":".join(line_list)
+        try:
+            if line[0] != '0' or (line[1] != '0' and line[1] != '2') or line[3] != '0' or line[4] != '0' or line[
+                9] != '0' or line[10] != '0' or line[12] != '0' or line[13] != '0' or line[15] != '0' or line[
+                16] != '0' or line[18] != '0' or line[19] != '0' or line[21] != '0' or line[22] != '0' or line[
+                                                                                                          6:8] == "00":
+                continue
+            if line[6:8] in normalKeys.keys():
+                output += [[normalKeys[line[6:8]]], [shiftKeys[line[6:8]]]][line[1] == '2']
+            else:
+                output += ['[unknown]']
+        except:
+            pass
+
+txt.close()
+
+flag = 0
+print("".join(output))
+for i in range(len(output)):
+    try:
+        a = output.index('<DEL>')
+        del output[a]
+        del output[a - 1]
+    except:
+        pass
+for i in range(len(output)):
+    try:
+        if output[i] == "<CAP>":
+            flag += 1
+            output.pop(i)
+            if flag == 2:
+                flag = 0
+        if flag != 0:
+            output[i] = output[i].upper()
+    except:
+        pass
+print('output :' + "".join(output))
+# 2021nian<SPACE>8yue<SPACE>5ri<SPACE>,qing22<DEL><RET>zuotian<SPACE>gei<SPACE>hanshu<SPACE>fale<SPACE>caotu<SPACE>,cadai<DEL><DEL><DEL><DEL><DEL>odaooo<DEL><DEL>41tale<SPACE>,kaixin<SPACE><RET>yizhou<SPACE>meiyoukan<SPACE>jiaran=61de<SPACE>shipinle<SPACE>,nanshou<SPACE>nie1<RET>dongfangyaohe<SPACE>musedash<RET>liandongle<SPACE>,shuangchukuangxi<SPACE>[unknown][unknown]<DEL>chu=2[unknown][unknown]<RET>moectf<RET>de<SPACE>misc<RET>ti<SPACE>caichule<SPACE>4dao2,male<SPACE><RET>woxiang<SPACE>moyu2moyu<SPACE>mou<DEL>yu<SPACE><RET>d<DEL><GA>damedane	<RET>\<DEL>,<RET>dameyo<SPACE><RET>,<RET>damenanoyo<SPACE><RET><RET>xin2misc<RET>ti<SPACE>de<SPACE>flag<RET>xiangge3shengcao21yidiande<SPACE><RET>jiujiao<DEL><DEL><DEL><DEL>yo<DEL>ng<SPACE><SPACE>moectf<RET>{}[unknown]D@m3daNe_D4me_yoooooo[unknown][unknown][unknown]haole<DEL><DEL><DEL><DEL><DEL><SPACE>haole<SPACE>riji<SPACE>.<DEL>.txt<RET>
+# output :2021nian<SPACE>8yue<SPACE>5ri<SPACE>,qing2<RET>zuotian<SPACE>gei<SPACE>hanshu<SPACE>fale<SPACE>caotu<SPACE>,odao41tale<SPACE>,kaixin<SPACE><RET>yizhou<SPACE>meiyoukan<SPACE>jiaran=61de<SPACE>shipinle<SPACE>,nanshou<SPACE>nie1<RET>dongfangyaohe<SPACE>musedash<RET>liandongle<SPACE>,shuangchukuangxi<SPACE>[unknown]chu=2[unknown][unknown]<RET>moectf<RET>de<SPACE>misc<RET>ti<SPACE>caichule<SPACE>4dao2,male<SPACE><RET>woxiang<SPACE>moyu2moyu<SPACE>moyu<SPACE><RET><GA>damedane	<RET>,<RET>dameyo<SPACE><RET>,<RET>damenanoyo<SPACE><RET><RET>xin2misc<RET>ti<SPACE>de<SPACE>flag<RET>xiangge3shengcao21yidiande<SPACE><RET>jiuyng<SPACE><SPACE>moectf<RET>{}[unknown]D@m3daNe_D4me_yoooooo[unknown][unknown][unknown]<SPACE>haole<SPACE>riji<SPACE>.txt<RET>
+```
