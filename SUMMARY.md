@@ -7,6 +7,7 @@
 * [GDOUCTF 2023](gdouctf-2023.md)
 * [MoeCTF 2022](moectf-2022.md)
 * [SWPUCTF 2022](swpuctf-2022.md)
+* [SWPUCTF 2021](swpuctf-2021.md)
 * [MoeCTF 2021](moectf-2021.md)
 * [MRCTF 2020](mrctf-2020.md)
 * [GYCTF 2020](gyctf-2020.md)
