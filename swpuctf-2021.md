@@ -259,7 +259,7 @@ if(isset($_GET['wllm'])) {
 
 > https://blog.csdn.net/qq\_61778128/article/details/127063407
 
-```
+```php
 <?php
 $_=[].'';   //得到"Array"
 $___ = $_[$__];   //得到"A"，$__没有定义，默认为False也即0，此时$___="A"
