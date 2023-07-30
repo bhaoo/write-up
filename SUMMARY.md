@@ -14,6 +14,7 @@
 * [GYCTF 2020](gyctf-2020.md)
 * [BJDCTF 2020](bjdctf-2020.md)
 * [网鼎杯 2020 朱雀组](wang-ding-bei-2020-zhu-que-zu.md)
+* [安洵杯 2019](an-xun-bei-2019.md)
 * [强网杯 2019](qiang-wang-bei-2019.md)
 * [ZJCTF 2019](zjctf-2019.md)
 * [RoarCTF 2019](roarctf-2019.md)
