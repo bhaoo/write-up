@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Introduction](README.md)
+* [DASCTF Jul.2023](dasctf-jul.2023.md)
 * [LitCTF 2023](litctf-2023.md)
 * [蓝桥杯 2023](lan-qiao-bei-2023.md)
 * [NSSRound#13](nssround-13.md)
