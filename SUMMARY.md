@@ -20,6 +20,7 @@
 * [RoarCTF 2019](roarctf-2019.md)
 * [GWCTF 2019](gwctf-2019.md)
 * [GXYCTF 2019](gxyctf-2019.md)
+* [WesternCTF 2018](westernctf-2018.md)
 * [HCTF 2018](hctf-2018.md)
 * [网鼎杯 2018](wang-ding-bei-2018.md)
 * [BUUCTF 2018](buuctf-2018.md)
