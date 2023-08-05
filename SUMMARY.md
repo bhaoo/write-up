@@ -18,6 +18,7 @@
 * [CISCN 2019](ciscn-2019.md)
 * [安洵杯 2019](an-xun-bei-2019.md)
 * [强网杯 2019](qiang-wang-bei-2019.md)
+* [SWPUCTF 2019](swpuctf-2019.md)
 * [ZJCTF 2019](zjctf-2019.md)
 * [RoarCTF 2019](roarctf-2019.md)
 * [GWCTF 2019](gwctf-2019.md)
