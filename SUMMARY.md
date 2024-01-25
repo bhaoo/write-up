@@ -21,6 +21,7 @@
 * [极客大挑战 2019](ji-ke-da-tiao-zhan-2019.md)
 * [安洵杯 2019](an-xun-bei-2019.md)
 * [强网杯 2019](qiang-wang-bei-2019.md)
+* [SUCTF 2019](suctf-2019.md)
 * [De1CTF 2019](de1ctf-2019.md)
 * [SWPUCTF 2019](swpuctf-2019.md)
 * [ZJCTF 2019](zjctf-2019.md)
