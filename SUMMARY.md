@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Introduction](README.md)
+* [NepCTF 2025](nepctf-2025.md)
 * [NewStarCTF 2023](newstarctf-2023.md)
 * [MoeCTF 2023](moectf-2023.md)
 * [DASCTF Jul.2023](dasctf-jul.2023.md)
